@@ -24,6 +24,7 @@ use crate::libc::pthread::mutex::{
 };
 use crate::mem::{guest_size_of, ConstPtr, MutPtr, MutVoidPtr, SafeRead};
 use crate::objc::classes::InitializationStatus;
+use crate::objc::methods::Method;
 use crate::Environment;
 use std::any::TypeId;
 
@@ -219,7 +220,7 @@ pub fn lookup_imp_for_class(
                 continue;
             }
 
-            if let Some(imp) = methods.get(&selector) {
+            if let Some(Method { imp, .. }) = methods.get(&selector) {
                 log_dbg!("Found method on: {}", name);
                 return Some(imp.clone());
             } else {
