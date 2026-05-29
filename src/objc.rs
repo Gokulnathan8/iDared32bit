@@ -89,6 +89,9 @@ pub struct ObjC {
     /// same `Method`.
     method_handles: HashMap<(Class, SEL), MutPtr<method_t>>,
 
+    /// Cache mapping metaclasses to classes.
+    metaclass_classes: HashMap<Class, Class>,
+
     /// Temporary storage for optional type information when sending a message.
     /// Type information isn't part of the `objc_msgSend` ABI, so an alternative
     /// channel is needed.
@@ -104,6 +107,7 @@ impl ObjC {
             sync_mutexes: HashMap::new(),
             initializer_threads: HashMap::new(),
             method_handles: HashMap::new(),
+            metaclass_classes: HashMap::new(),
             message_type_info: None,
         }
     }
