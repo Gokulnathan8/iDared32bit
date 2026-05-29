@@ -24,17 +24,10 @@ use std::any::TypeId;
 /// "guest methods" (functions in the guest app). Either way, the function needs
 /// to conform to the same ABI: [id] and [SEL] must be its first two parameters.
 #[allow(clippy::upper_case_acronyms)]
+#[derive(Clone)]
 pub enum IMP {
     Host(&'static dyn HostIMP),
     Guest(GuestIMP),
-}
-impl Clone for IMP {
-    fn clone(&self) -> Self {
-        match self {
-            IMP::Guest(guest_imp) => IMP::Guest(*guest_imp),
-            IMP::Host(_) => unimplemented!(),
-        }
-    }
 }
 impl std::fmt::Debug for IMP {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
