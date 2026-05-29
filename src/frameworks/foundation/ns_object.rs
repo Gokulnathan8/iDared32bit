@@ -16,6 +16,7 @@
 
 use super::ns_string::{from_rust_string, to_rust_string};
 use super::{ns_key_value_observing, NSTimeInterval, NSUInteger};
+use crate::abi::GuestFunction;
 use crate::frameworks::foundation::ns_run_loop::{add_perform_request, cancel_perform_requests};
 use crate::frameworks::foundation::ns_thread::detach_new_thread_inner;
 use crate::libc::semaphore::{host_destroy_semaphore, sem_wait};
@@ -358,6 +359,11 @@ forUndefinedKey:(id)key { // NSString*
         sem_wait(env, sem);
         host_destroy_semaphore(env, sem);
     }
+}
+
+- (GuestFunction)methodForSelector:(SEL)selector {
+    let isa = ObjC::read_isa(this, &env.mem);
+    ObjC::class_get_method_guest_function(env, isa, selector)
 }
 
 // UINibLoadingAdditions protocol
