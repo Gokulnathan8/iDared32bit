@@ -150,14 +150,26 @@ impl State {
         }
         for animation in self.started_animations {
             let delegate = msg![env; animation delegate];
-            if delegate != nil {
+            // The protocol marks animationDidStart: as optional
+            if delegate != nil
+                && env
+                    .objc
+                    .object_has_method_named(&env.mem, delegate, "animationDidStart:")
+            {
                 () = msg![env; delegate animationDidStart: animation];
             }
         }
 
         for (layer, animation, finished, removed_on_completion, key) in self.finished_animations {
             let delegate = msg![env; animation delegate];
-            if delegate != nil {
+            // The protocol marks animationDidStop:finished: as optional
+            if delegate != nil
+                && env.objc.object_has_method_named(
+                    &env.mem,
+                    delegate,
+                    "animationDidStop:finished:",
+                )
+            {
                 () = msg![env; delegate animationDidStop: animation finished: finished];
             }
 
