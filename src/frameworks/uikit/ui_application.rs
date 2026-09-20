@@ -7,6 +7,8 @@
 
 use super::ui_device::*;
 use crate::dyld::{export_c_func, ConstantExports, FunctionExports, HostConstant};
+use crate::frameworks::core_graphics::cg_geometry::CGRectZero;
+use crate::frameworks::core_graphics::{CGPoint, CGRect, CGSize};
 use crate::frameworks::foundation::ns_string::{from_rust_string, get_static_str};
 use crate::frameworks::foundation::{ns_array, ns_string, NSInteger, NSUInteger};
 use crate::mem::MutPtr;
@@ -155,6 +157,33 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (())setNetworkActivityIndicatorVisible:(bool)visible {
     todo_objc_setter!(this, visible);
+}
+
+- (CGRect)statusBarFrame {
+    if env.framework_state.uikit.ui_application.status_bar_hidden {
+        return CGRectZero;
+    }
+
+    // The frame is in screen coordinates, which are always portrait on
+    // iPhone OS, so in landscape the bar is a strip down one side.
+    let bar_height = 20.0;
+    let (width, height) = env.window.as_ref().unwrap().device_family().portrait_size();
+    let (width, height) = (width as f32, height as f32);
+    let current_rotation = env.window.as_ref().unwrap().current_rotation();
+
+    let (x, y, w, h) = match current_rotation {
+        DeviceOrientation::Portrait => (0.0, 0.0, width, bar_height),
+        DeviceOrientation::PortraitUpsideDown => (0.0, height - bar_height, width, bar_height),
+        // Home button on the right
+        DeviceOrientation::LandscapeLeft => (width - bar_height, 0.0, bar_height, height),
+        // Home button on the left
+        DeviceOrientation::LandscapeRight => (0.0, 0.0, bar_height, height),
+    };
+
+    CGRect {
+        origin: CGPoint { x, y },
+        size: CGSize { width: w, height: h },
+    }
 }
 
 - (bool)openURL:(id)url { // NSURL
