@@ -356,6 +356,22 @@ fn apply_animation(
                 set_scale(presentation, "transform.scale.y", scale.y);
             }
         }
+        "transform.translation.x" | "transform.translation.y" => {
+            let from_value = id_as_option(from_value).map(|obj| msg![env; obj floatValue]);
+            let to_value = id_as_option(to_value).map(|obj| msg![env; obj floatValue]);
+            let by_value = id_as_option(by_value).map(|obj| msg![env; obj floatValue]);
+            let is_x = key_path.ends_with('x');
+            let transform = presentation.affine_transform;
+            let current = if is_x { transform.tx } else { transform.ty };
+            let (from_value, by_value) =
+                get_from_and_by_values(Some(current), from_value, to_value, by_value);
+            let value = from_value + by_value * interpolation_amount;
+            if is_x {
+                presentation.affine_transform.tx = value;
+            } else {
+                presentation.affine_transform.ty = value;
+            }
+        }
         "transform" => {
             assert!(by_value == nil, "TODO: byValue for transform animations");
             let current = transform_components(presentation.affine_transform);
