@@ -99,6 +99,12 @@ void (*method_getImplementation(Method m))(void);
 - (BOOL)isEqualToArray:(NSArray *)otherArray;
 @end
 
+@interface NSMutableArray<ObjectType> : NSArray
+- (void)addObject:(id)object;
+- (void)removeObject:(id)object;
+- (void)removeObjectsInArray:(NSArray *)otherArray;
+@end
+
 @interface NSDictionary<KeyType, ObjectType> : NSObject
 + (instancetype)dictionaryWithObjects:(NSArray<ObjectType> *)objects
                               forKeys:(NSArray<KeyType> *)keys;
@@ -136,6 +142,7 @@ typedef enum {
 @end
 
 @interface NSNumber : NSValue
++ (NSNumber *)numberWithInt:(int)value;
 + (NSNumber *)numberWithFloat:(float)value;
 + (NSNumber *)numberWithBool:(bool)value;
 @end
