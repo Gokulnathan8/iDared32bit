@@ -57,12 +57,14 @@ Not affiliated with or endorsed by the mGBA project, whose ARM interpreter iDare
 
 ## Graphical user interface
 
-iDared 32bit uses the same built-in app picker as touchHLE. If you put your `.ipa` files and `.app` bundles in the `touchHLE_apps` directory, they will show up in the app picker when you run iDared 32bit. Note that the app binary must not be encrypted to be usable.
-To access the `touchHLE_apps` directory, simply tap the “File manager” button in iDared 32bit.
+iDared 32bit uses the same built-in app picker as touchHLE. If you put your `.ipa` files and `.app` bundles in the `Games` folder, they will show up in the app picker when you run iDared 32bit. Note that the app binary must not be encrypted to be usable.
+To access the `Games` folder, simply tap the “File manager” button in iDared 32bit.
 
-To configure the options, you can edit the `touchHLE_options.txt` file. To get a list of options, look in the `OPTIONS_HELP.txt` file.
+To configure the options, you can edit the `Options.txt` file. To get a list of options, look in the `OPTIONS_HELP.txt` file.
 
-Any data saved by the app (e.g. **saved games**) are stored in the `touchHLE_sandbox` folder.
+Any data saved by the app (e.g. **saved games**) are stored in the `Saves` folder.
+
+These are the names on iOS. Older versions used touchHLE's names (`touchHLE_apps`, `touchHLE_options.txt`, `touchHLE_sandbox` and `touchHLE_wallpaper.png`), and iDared 32bit moves them to the new names automatically. Other platforms still use touchHLE's names.
 
 ## License
 

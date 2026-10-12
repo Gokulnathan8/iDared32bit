@@ -4,6 +4,10 @@ iDared 32bit is based on [touchHLE](https://touchhle.org/). This file lists only
 
 ## NEXT
 
+Usability:
+
+- The folders and files in the Files app have simpler names: `Games`, `Saves`, `Options.txt`, `Wallpaper.png` and `Log.txt`. Existing ones are moved to the new names automatically.
+
 Other:
 
 - On iPhone and iPad, the license information now includes the license notices of the libraries and fonts that games use inside the emulated device, and the written offer for the source code of the GPL-licensed libgcc and libstdc++ libraries. These were missing there.

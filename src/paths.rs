@@ -178,24 +178,46 @@ impl std::fmt::Debug for ResourceFile {
 pub const RESOURCES_ARE_EXTERNAL_FILES: bool =
     cfg!(not(any(target_os = "android", target_os = "ios")));
 
+// On iOS, the user's files have simpler names, which people see in the Files
+// app. Older versions used the other platforms' names; see
+// [migrate_old_names].
+
 /// Name of the directory where the user can put apps if they want them to
 /// appear in the app picker.
+#[cfg(not(target_os = "ios"))]
 pub const APPS_DIR: &str = "touchHLE_apps";
+#[cfg(target_os = "ios")]
+pub const APPS_DIR: &str = "Games";
 
 /// Name of the file intended for the user's own options.
+#[cfg(not(target_os = "ios"))]
 pub const USER_OPTIONS_FILE: &str = "touchHLE_options.txt";
+#[cfg(target_os = "ios")]
+pub const USER_OPTIONS_FILE: &str = "Options.txt";
 
 /// Names of files the user can put a wallpaper image (for the app picker) in.
 #[allow(unused)]
+#[cfg(not(target_os = "ios"))]
 pub const WALLPAPER_FILES: &[&str] = &[
     "touchHLE_wallpaper.png",
     "touchHLE_wallpaper.jpg",
     "touchHLE_wallpaper.jpeg",
 ];
+#[cfg(target_os = "ios")]
+pub const WALLPAPER_FILES: &[&str] = &["Wallpaper.png", "Wallpaper.jpg", "Wallpaper.jpeg"];
 
 /// Name of the directory where touchHLE will store sandboxed app data, e.g.
 /// the `Documents` directory.
+#[cfg(not(target_os = "ios"))]
 pub const SANDBOX_DIR: &str = "touchHLE_sandbox";
+#[cfg(target_os = "ios")]
+pub const SANDBOX_DIR: &str = "Saves";
+
+/// Names of the log file and the previous run's log (see [crate::log]).
+#[cfg(not(target_os = "ios"))]
+pub const LOG_FILES: [&str; 2] = ["touchHLE_log.txt", "touchHLE_log.previous.txt"];
+#[cfg(target_os = "ios")]
+pub const LOG_FILES: [&str; 2] = ["Log.txt", "Log.previous.txt"];
 
 /// Name of the directory where touchHLE will store IMG_####.PNG files saved to
 /// the Photo Album.
@@ -339,11 +361,22 @@ pub fn prepopulate_user_data_dir() {
     }
 
     let apps_dir_readme = apps_dir.join("README.txt");
-    if !apps_dir_readme.is_file() {
-        let content = include_str!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/touchHLE_apps/README.txt"
-        ));
+    let content = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/touchHLE_apps/README.txt"
+    ));
+    #[cfg(target_os = "ios")]
+    let (old_content, content) = (
+        content,
+        "Put your .app bundles or .ipa files in this folder, and they'll show \
+         up in the app picker.\n",
+    );
+    // Older iOS versions created it with the other platforms' text.
+    #[cfg(target_os = "ios")]
+    let outdated = std::fs::read_to_string(&apps_dir_readme).is_ok_and(|s| s == old_content);
+    #[cfg(not(target_os = "ios"))]
+    let outdated = false;
+    if !apps_dir_readme.is_file() || outdated {
         create_file(&apps_dir_readme, content);
     }
 
@@ -356,5 +389,72 @@ pub fn prepopulate_user_data_dir() {
     let options_help = base_path.join("OPTIONS_HELP.txt");
     if !options_help.is_file() {
         create_file(&options_help, crate::options::OPTIONS_HELP);
+    }
+}
+
+/// Older iOS versions used the other platforms' names for the user's files.
+/// Move anything still under an old name to its new one. Nothing is
+/// overwritten, so this is safe to run on every launch, and does nothing once
+/// it's done. Call it before anything uses the user's files, except the log.
+#[cfg(target_os = "ios")]
+pub fn migrate_old_names() {
+    let base_path = user_data_base_path();
+    let names = [
+        ("touchHLE_apps", APPS_DIR),
+        ("touchHLE_sandbox", SANDBOX_DIR),
+        ("touchHLE_options.txt", USER_OPTIONS_FILE),
+        ("touchHLE_wallpaper.png", WALLPAPER_FILES[0]),
+        ("touchHLE_wallpaper.jpg", WALLPAPER_FILES[1]),
+        ("touchHLE_wallpaper.jpeg", WALLPAPER_FILES[2]),
+        // The new log is already open, so the last run's becomes the previous.
+        ("touchHLE_log.txt", LOG_FILES[1]),
+    ];
+    for (old, new) in names {
+        move_without_overwriting(&base_path.join(old), &base_path.join(new));
+    }
+    // Normal log rotation would have replaced this by now.
+    let _ = std::fs::remove_file(base_path.join("touchHLE_log.previous.txt"));
+}
+
+/// Moves `from` to `to`. If both are directories, `from`'s contents are moved
+/// into `to` one by one, and `from` is removed only if that empties it.
+#[cfg(target_os = "ios")]
+fn move_without_overwriting(from: &Path, to: &Path) {
+    if std::fs::symlink_metadata(from).is_err() {
+        return;
+    }
+    if std::fs::symlink_metadata(to).is_err() {
+        match std::fs::rename(from, to) {
+            Ok(()) => {
+                log!("Moved {} to {}", from.display(), to.display());
+            }
+            Err(e) => {
+                log!(
+                    "Warning: Couldn't move {} to {}: {}",
+                    from.display(),
+                    to.display(),
+                    e
+                );
+            }
+        }
+    } else if from.is_dir() && to.is_dir() {
+        for entry in std::fs::read_dir(from).into_iter().flatten().flatten() {
+            move_without_overwriting(&entry.path(), &to.join(entry.file_name()));
+        }
+        if std::fs::remove_dir(from).is_ok() {
+            log!("Moved {} into {}", from.display(), to.display());
+        } else {
+            log!(
+                "Warning: Some of {} couldn't be moved into {}, so it's left there",
+                from.display(),
+                to.display()
+            );
+        }
+    } else {
+        log!(
+            "Warning: Didn't move {}, as {} already exists",
+            from.display(),
+            to.display()
+        );
     }
 }
