@@ -9,6 +9,7 @@ pub mod ui_table_view;
 pub mod ui_text_view;
 use crate::frameworks::core_graphics::{CGPoint, CGRect, CGSize};
 use crate::frameworks::foundation::NSInteger;
+use crate::frameworks::uikit::ui_geometry::UIEdgeInsets;
 use crate::objc::{
     id, impl_HostObject_with_superclass, msg, nil, objc_classes, todo_objc_setter, ClassExports,
     NSZonePtr, SEL,
@@ -86,6 +87,10 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (())setShowsVerticalScrollIndicator:(bool)value {
     todo_objc_setter!(this, value);
+}
+
+- (())setContentInset:(UIEdgeInsets)insets {
+    todo_objc_setter!(this, insets);
 }
 
 - (())setScrollsToTop:(bool)value {
