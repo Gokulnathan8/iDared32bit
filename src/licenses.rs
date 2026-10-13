@@ -36,6 +36,10 @@ version 2.0 (MPL-2.0). You can obtain a copy of the license at
 <https://mozilla.org/MPL/2.0/>, and the source code at the address given
 above.
 
+The iDared 32bit name, logo and app icon are © 2026 Alex Martin, all rights
+reserved. They are not licensed under the MPL-2.0 or any other open-source
+license.
+
 This executable is not licensed under the GNU General Public License (GPL).
 Its own code, and every library compiled into it, is licensed under MPL-2.0 or
 under more permissive terms, as listed below. None of it is GPL-licensed.
