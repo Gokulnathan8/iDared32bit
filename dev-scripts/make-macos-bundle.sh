@@ -10,12 +10,12 @@ if [[ $# == 3 ]]; then
     BRANDING="$3"
     shift 3
 
+    # iDared 32bit has one icon for every branding.
+    ICON_NAME=icon
     if [[ "x$BRANDING" == "x" ]]; then
         APP_NAME=touchHLE
-        ICON_NAME=icon
     else
         APP_NAME="touchHLE $BRANDING"
-        ICON_NAME="icon_$(echo "$BRANDING" | tr 'A-Z' 'a-z')"
         VERSION="$VERSION $BRANDING"
     fi
     rm -rf "$ICON_NAME.icns" "$ICON_NAME.iconset"

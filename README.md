@@ -83,6 +83,7 @@ Copyright, authorship, and license notices for touchHLE, mGBA, and bundled compo
 The iDared 32bit name, logo and app icon are © 2026 Alex Martin, all rights reserved. They are not licensed under the MPL-2.0 or any other open-source license, and the MPL-2.0 grants no rights to them either (see its section 2.3). They are in this repository only so that iDared 32bit itself can be built. These files are covered:
 
 - `iphone/touchHLE/Assets.xcassets/AppIcon.appiconset/AppIcon.png` (the app icon)
+- `res/icon.png` (a copy of the app icon, used by the other platforms)
 - `iphone/touchHLE/Assets.xcassets/AppPickerLogo.imageset/AppPickerLogo@3x.png` (the logo)
 
 If you distribute your own build or fork, give it its own name, logo and icon, and don't present it as iDared 32bit. The code itself remains yours to use under the MPL-2.0.

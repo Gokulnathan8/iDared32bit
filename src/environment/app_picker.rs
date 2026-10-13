@@ -502,17 +502,8 @@ fn show_app_picker_gui(
     apps: Result<Vec<AppInfo>, String>,
 ) -> Result<(PathBuf, Vec<String>), String> {
     let icon = {
-        let bytes: &[u8] = match crate::branding() {
-            "" => include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/res/icon.png")),
-            "UNOFFICIAL" => include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/res/icon_unofficial.png"
-            )),
-            "PREVIEW" => {
-                include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/res/icon_preview.png"))
-            }
-            _ => panic!(),
-        };
+        // iDared 32bit has one icon for every branding.
+        let bytes: &[u8] = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/res/icon.png"));
         let mut image = Image::from_bytes(bytes).unwrap();
         // should match Bundle::load_icon()
         image.round_corners(

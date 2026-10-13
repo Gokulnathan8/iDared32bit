@@ -83,8 +83,9 @@ android {
         }
         resValue("string", "app_name", join("iDared 32bit", " ", branding))
         buildConfigField("String", "APP_NAME", "\"${join("iDared 32bit", " ", branding)}\"")
-        manifestPlaceholders["icon"] = join("@drawable/icon", "_", branding.lowercase())
-        buildConfigField("int", "APP_ICON", join("R.drawable.icon", "_", branding.lowercase()))
+        // iDared 32bit has one icon for every branding.
+        manifestPlaceholders["icon"] = "@drawable/icon"
+        buildConfigField("int", "APP_ICON", "R.drawable.icon")
         versionName = join(getVersionName(), " ", branding)
         versionCode = getVersionCode()
 
