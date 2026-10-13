@@ -48,7 +48,7 @@ pub fn app_picker(apps: Result<Vec<AppInfo>, String>) -> Result<(PathBuf, Vec<St
         .map(|app| app.icon.as_ref().unwrap_or(&placeholder))
         .collect();
 
-    let wallpaper = paths::WALLPAPER_FILES
+    let wallpaper = paths::wallpaper_files()
         .iter()
         .map(|file| paths::user_data_base_path().join(file))
         .find(|path| path.exists());

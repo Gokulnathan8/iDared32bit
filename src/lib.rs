@@ -160,7 +160,6 @@ pub fn main<T: Iterator<Item = String>>(mut args: T) -> Result<(), String> {
     {
         let base_path = paths::user_data_base_path();
         log!("Base path for iDared 32bit files: {}", base_path.display());
-        #[cfg(target_os = "ios")]
         paths::migrate_old_names();
         paths::prepopulate_user_data_dir();
     }
@@ -394,7 +393,7 @@ fn run_app(
         Ok(mut file) => apply_options(file.get(), default_options_path, &mut options, app_id)?,
         Err(err) => echo!("Warning: Could not open {}: {}", default_options_path, err),
     }
-    let user_options_path = paths::user_data_base_path().join(paths::USER_OPTIONS_FILE);
+    let user_options_path = paths::user_data_base_path().join(paths::user_options_file());
     match std::fs::File::open(&user_options_path) {
         Ok(file) => apply_options(file, user_options_path.display(), &mut options, app_id)?,
         Err(err) => echo!(

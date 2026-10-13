@@ -14,7 +14,7 @@ use std::sync::LazyLock;
 /// is not convenient for users who aren't accustomed to command-line tools or
 /// who don't have access to ADB, so we also write to a log file.
 ///
-/// The log from the previous run is kept (see [crate::paths::LOG_FILES]),
+/// The log from the previous run is kept (see [crate::paths::log_files]),
 /// replacing any older one, so there is only ever one previous log. On iOS
 /// and Android, getting past a hang or black screen means relaunching, which
 /// would otherwise overwrite the log of the run that went wrong.
@@ -30,7 +30,7 @@ pub fn module_name(path: &'static str) -> &'static str {
 pub fn get_log_file() -> &'static File {
     static LOG_FILE: LazyLock<File> = LazyLock::new(|| {
         let base_path = crate::paths::user_data_base_path();
-        let [log, previous] = crate::paths::LOG_FILES;
+        let [log, previous] = crate::paths::log_files();
         let path = base_path.join(log);
         // This replaces an existing previous log on all platforms (including
         // Windows, where Rust's rename replaces the destination too). It fails

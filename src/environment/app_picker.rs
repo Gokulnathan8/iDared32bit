@@ -56,10 +56,13 @@ struct AppInfo {
 }
 
 pub fn app_picker(options: Options) -> Result<(PathBuf, Vec<String>), String> {
-    let apps_dir = paths::user_data_base_path().join(paths::APPS_DIR);
+    let apps_dir = paths::user_data_base_path().join(paths::apps_dir());
 
     let apps: Result<Vec<AppInfo>, String> = if !apps_dir.is_dir() {
-        Err(format!("The {} folder couldn't be found.", paths::APPS_DIR))
+        Err(format!(
+            "The {} folder couldn't be found.",
+            paths::apps_dir()
+        ))
     } else {
         let languages = options.preferred_languages.clone().unwrap_or_else(|| {
             sdl2::locale::get_preferred_locales()
@@ -75,7 +78,7 @@ pub fn app_picker(options: Options) -> Result<(PathBuf, Vec<String>), String> {
             .map_err(|err| {
                 format!(
                     "Couldn't get list of apps in the {} directory: {}.",
-                    paths::APPS_DIR,
+                    paths::apps_dir(),
                     err
                 )
             })
@@ -83,7 +86,7 @@ pub fn app_picker(options: Options) -> Result<(PathBuf, Vec<String>), String> {
                 if apps.is_empty() {
                     Err(format!(
                         "No games were found in the {} folder.",
-                        paths::APPS_DIR
+                        paths::apps_dir()
                     ))
                 } else {
                     Ok(apps)
@@ -587,7 +590,7 @@ fn app_picker_inner(
     // Wallpaper
     let mut found_wallpaper = false;
     let mut have_wallpaper = false;
-    for candidate in paths::WALLPAPER_FILES {
+    for candidate in paths::wallpaper_files() {
         let candidate = paths::user_data_base_path().join(candidate);
         if !candidate.exists() {
             continue;
@@ -648,7 +651,7 @@ fn app_picker_inner(
         let CGSize { width, height } = app_frame.size;
         log!(
             "No wallpaper found; filename can be one of: {}; ideal size is {}×{} pixels",
-            paths::WALLPAPER_FILES.join(", "),
+            paths::wallpaper_files().join(", "),
             width,
             height,
         );
