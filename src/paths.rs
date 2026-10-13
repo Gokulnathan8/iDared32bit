@@ -193,7 +193,7 @@ pub const RESOURCES_ARE_EXTERNAL_FILES: bool =
 pub fn simple_names() -> bool {
     static SIMPLE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     *SIMPLE.get_or_init(|| {
-        cfg!(any(target_os = "ios", target_os = "macos"))
+        cfg!(any(target_os = "ios", target_os = "macos", target_os = "windows"))
             && !user_data_base_path().join("Cargo.toml").exists()
     })
 }

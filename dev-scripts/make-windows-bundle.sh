@@ -1,20 +1,22 @@
 #!/bin/sh
 set -e
 
-# Bundles the touchHLE executable with the basic set of files needed for
-# touchHLE to run (the same ones found in the macOS .app bundle or Android APK).
+# Bundles the iDared 32bit executable with the basic set of files needed for
+# it to run (the same ones found in the macOS .app bundle or Android APK).
 # This does not prepare a full release.
 
 if [[ $# == 1 ]]; then
     PATH_TO_BINARY="$1"
     shift
 
-    rm -rf touchHLE_windows_bundle
-    mkdir touchHLE_windows_bundle
-    cp $PATH_TO_BINARY touchHLE_windows_bundle/
-    cp -r ../dylibs touchHLE_windows_bundle/
-    cp -r ../touchHLE_fonts touchHLE_windows_bundle/
-    cp -r ../touchHLE_default_options.txt touchHLE_windows_bundle/
+    rm -rf iDared32bit_windows_bundle
+    mkdir iDared32bit_windows_bundle
+    cp $PATH_TO_BINARY iDared32bit_windows_bundle/iDared32bit.exe
+    cp -r ../dylibs iDared32bit_windows_bundle/
+    cp -r ../touchHLE_fonts iDared32bit_windows_bundle/
+    cp -r ../touchHLE_default_options.txt iDared32bit_windows_bundle/
+    # Where games go. Windows has no fixed place to create it in.
+    mkdir iDared32bit_windows_bundle/Games
 else
     echo "Incorrect usage."
     exit 1
