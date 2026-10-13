@@ -59,6 +59,8 @@ struct NSRunLoopHostObject {
     /// Strong references to `NSTimer*` in no particular order. Timers are owned
     /// by the run loop. The timer must remove itself when invalidated.
     timers: Vec<id>,
+    /// Set by `CFRunLoopStop`, cleared when the run loop stops.
+    stopped: bool,
 }
 impl HostObject for NSRunLoopHostObject {}
 
@@ -120,7 +122,10 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (())run {
-    run_run_loop(env, this, /* single_iteration: */ false, None);
+    // Like Apple's, CFRunLoopStop doesn't end this, it just runs again.
+    loop {
+        run_run_loop(env, this, /* single_iteration: */ false, None);
+    }
 }
 
 - (())runUntilDate:(id)date {
@@ -294,6 +299,11 @@ pub(super) fn cancel_perform_requests(
         .selector_objects = new_selector_objects;
 }
 
+/// For use by `CFRunLoopStop`.
+pub fn stop_run_loop(env: &mut Environment, run_loop: id) {
+    env.objc.borrow_mut::<NSRunLoopHostObject>(run_loop).stopped = true;
+}
+
 /// Run the run loop for just a single iteration. This is a special mode just
 /// for the app picker, since we don't have `runMode:beforeDate:` yet.
 /// (TODO: implement those to replace this.)
@@ -459,7 +469,8 @@ pub fn run_run_loop(
         let limit = Duration::from_millis(1000 / 60);
         env.sleep(sleep_until.map_or(limit, |i| i.duration_since(Instant::now()).min(limit)));
 
-        if single_iteration {
+        let stopped = &mut env.objc.borrow_mut::<NSRunLoopHostObject>(run_loop).stopped;
+        if single_iteration || std::mem::take(stopped) {
             break;
         }
 
@@ -494,6 +505,7 @@ fn run_loop_for_thread(env: &mut Environment, this: Class, thread_id: ThreadId) 
             audio_queues: Vec::new(),
             selector_objects: VecDeque::new(),
             timers: Vec::new(),
+            stopped: false,
         });
         // TODO: is it OK to allocate static object for all threads,
         // not only main one?
