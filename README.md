@@ -1,4 +1,4 @@
-# <img src="https://idared32bit-emu.com/idared32bit-icon.png" alt="iDared 32bit icon" width="48" height="48"> iDared 32bit
+<p align="center"><img src="iphone/touchHLE/Assets.xcassets/AppPickerLogo.imageset/AppPickerLogo@3x.png" alt="iDared 32bit logo" width="345"></p>
 
 **iDared 32bit** runs classic 32-bit iPhone OS apps and games on modern iPhones and iPads.
 
@@ -70,13 +70,22 @@ iDared 32bit © 2026 iDared 32bit project contributors.
 
 touchHLE © 2023–2026 touchHLE project contributors.
 
-iDared 32bit is based on touchHLE. Its source code, including touchHLE's and the modifications made to it here, is licensed under the Mozilla Public License 2.0 (MPL-2.0).
+iDared 32bit is based on touchHLE. Its source code, including touchHLE's and the modifications made to it here, is licensed under the Mozilla Public License 2.0 (MPL-2.0). The iDared 32bit name, logo and app icon are not; see below.
 
 **Distributed binaries are also licensed under the MPL-2.0. They are not licensed under the GNU General Public License (GPL).** Everything compiled into the executable is licensed under the MPL-2.0 or under more permissive terms; none of it is GPL-licensed.
 
 The app carries copies of the libgcc and libstdc++ dynamic libraries from Apple's iPhone OS SDK (`touchHLE_dylibs/`), which apps running inside the emulated device link against. These are separate programs, licensed under the GNU GPL version 2 or later. They run only inside the emulated device, are not linked with iDared 32bit, and do not change its license. Their license notices, and a written offer for their source code, are included in the app's license information.
 
 Copyright, authorship, and license notices for touchHLE, mGBA, and bundled components are preserved in the source and available through the app's license information. See `LICENSE`, `src/licenses.rs`, and the applicable bundled-component directories for details.
+
+### Name, logo and app icon
+
+The iDared 32bit name, logo and app icon are © 2026 Alex Martin, all rights reserved. They are not licensed under the MPL-2.0 or any other open-source license, and the MPL-2.0 grants no rights to them either (see its section 2.3). They are in this repository only so that iDared 32bit itself can be built. These files are covered:
+
+- `iphone/touchHLE/Assets.xcassets/AppIcon.appiconset/AppIcon.png` (the app icon)
+- `iphone/touchHLE/Assets.xcassets/AppPickerLogo.imageset/AppPickerLogo@3x.png` (the logo)
+
+If you distribute your own build or fork, give it its own name, logo and icon, and don't present it as iDared 32bit. The code itself remains yours to use under the MPL-2.0.
 
 # Thanks
 
