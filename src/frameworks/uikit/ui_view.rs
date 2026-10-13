@@ -464,6 +464,20 @@ pub const CLASSES: ClassExports = objc_classes! {
     // nothing.
 }
 
+- (())layoutIfNeeded {
+    // Pending layout isn't tracked, so lay out this view and its subviews now.
+    () = msg![env; this layoutSubviews];
+    let subviews = env.objc.borrow::<UIViewHostObject>(this).subviews.clone();
+    // Laying out one could remove another.
+    for &subview in &subviews {
+        retain(env, subview);
+    }
+    for subview in subviews {
+        () = msg![env; subview layoutIfNeeded];
+        release(env, subview);
+    }
+}
+
 - (id)superview {
     env.objc.borrow::<UIViewHostObject>(this).superview
 }
