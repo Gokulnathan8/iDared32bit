@@ -64,7 +64,7 @@ To configure the options, you can edit the `Options.txt` file. To get a list of 
 
 Any data saved by the app (e.g. **saved games**) are stored in the `Saves` folder.
 
-Older versions used touchHLE's names (`touchHLE_apps`, `touchHLE_options.txt`, `touchHLE_sandbox` and `touchHLE_wallpaper.png`), and iDared 32bit moves them to the new names automatically. Builds run from a source checkout still use touchHLE's names.
+Older versions used touchHLE's names (`touchHLE_apps`, `touchHLE_options.txt`, `touchHLE_sandbox` and `touchHLE_wallpaper.png`), and iDared 32bit moves them to the new names automatically. Running iDared 32bit straight from a source checkout on a computer (a folder with `Cargo.toml` in it) still uses touchHLE's names. Builds you make yourself for iPhone or iPad use the new names, like the App Store app.
 
 ## License
 
