@@ -212,7 +212,10 @@ final class PickerHostingController: UIHostingController<PickerView> {
         fatalError("init(coder:) is not supported")
     }
 
-    override var prefersStatusBarHidden: Bool { true }
+    // The time and battery, over the header. Games still hide it.
+    override var prefersStatusBarHidden: Bool { false }
+
+    override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
 
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
         .portrait
@@ -375,7 +378,7 @@ struct PickerView: View {
 
     var body: some View {
         content
-            .statusBarHidden(true)
+            .statusBarHidden(false)
             .sheet(isPresented: $model.showingQuickOptions) {
                 QuickOptionsView(model: model)
             }
