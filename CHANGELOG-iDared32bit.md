@@ -7,7 +7,7 @@ iDared 32bit is based on [touchHLE](https://touchhle.org/). This file lists only
 Usability:
 
 - Fixed a black screen on iPhone and iPad when a game couldn't start. The app picker now shows why, and other games can still be started afterwards.
-- The app picker shows games' higher-resolution icons when they include them, so they look sharper on modern screens.
+- The app picker shows games' higher-resolution icons when they include them, so they look sharper on modern screens. Games with only a low-resolution icon have it scaled up more smoothly.
 - Game icons are shown as they are, without an added glossy shine.
 
 Compatibility:

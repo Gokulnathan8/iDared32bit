@@ -6,6 +6,7 @@
 // Native SwiftUI app picker, shown by src/environment/app_picker/swiftui.rs.
 // The layout matches the picker drawn by src/environment/app_picker.rs.
 
+import CoreImage
 import SwiftUI
 import UIKit
 
@@ -59,7 +60,7 @@ public func idaredSwiftUIAppPicker(
         else {
             return nil
         }
-        appIcons.append(app.hasIcon ? icon : addQuestionMark(icon))
+        appIcons.append(app.hasIcon ? upscaleSmallIcon(icon) : addQuestionMark(icon))
     }
 
     let model = PickerModel(input: input, icons: appIcons)
@@ -114,6 +115,27 @@ private func makeImage(_ pixels: UnsafePointer<UInt8>, _ width: Int, _ height: I
         return nil
     }
     return UIImage(cgImage: image)
+}
+
+private let iconContext = CIContext()
+
+/// Games with only an old 57px icon look blocky when it's stretched to the
+/// picker's size, so it's first doubled with smooth (bilinear) scaling.
+/// Bigger icons are left as they are.
+private func upscaleSmallIcon(_ icon: UIImage) -> UIImage {
+    guard let cgImage = icon.cgImage, cgImage.width <= 57 else {
+        return icon
+    }
+    let rect = CGRect(x: 0, y: 0, width: cgImage.width * 2, height: cgImage.height * 2)
+    // Clamped, so the edges don't fade into the transparency around them.
+    let output = CIImage(cgImage: cgImage)
+        .clampedToExtent()
+        .transformed(by: CGAffineTransform(scaleX: 2, y: 2))
+        .cropped(to: rect)
+    guard let scaled = iconContext.createCGImage(output, from: rect) else {
+        return icon
+    }
+    return UIImage(cgImage: scaled)
 }
 
 private func addQuestionMark(_ icon: UIImage) -> UIImage {
