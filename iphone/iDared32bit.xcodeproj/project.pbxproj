@@ -71,7 +71,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		E36F904F2DD1B7E900950EF2 /* Exceptions for "touchHLE" folder in "iDared 32bit" target */ = {
+		E36F904F2DD1B7E900950EF2 /* Exceptions for "iDared32bit" folder in "iDared 32bit" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				"/Localized: LaunchScreen.storyboard",
@@ -81,12 +81,12 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		E3A46EC52DD1A44100619FED /* touchHLE */ = {
+		E3A46EC52DD1A44100619FED /* iDared32bit */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				E36F904F2DD1B7E900950EF2 /* Exceptions for "touchHLE" folder in "iDared 32bit" target */,
+				E36F904F2DD1B7E900950EF2 /* Exceptions for "iDared32bit" folder in "iDared 32bit" target */,
 			);
-			path = touchHLE;
+			path = iDared32bit;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -185,7 +185,7 @@
 				E3C0F1600000000000000001 /* Config.xcconfig */,
 				E36F8F702DD1AB1500950EF2 /* touchHLE.xcodeproj */,
 				E3A46EDD2DD1A79A00619FED /* SDL.xcodeproj */,
-				E3A46EC52DD1A44100619FED /* touchHLE */,
+				E3A46EC52DD1A44100619FED /* iDared32bit */,
 				E36F8F7E2DD1AB2100950EF2 /* Frameworks */,
 				E3A46EC42DD1A44100619FED /* Products */,
 			);
@@ -222,7 +222,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				E3A46EC52DD1A44100619FED /* touchHLE */,
+				E3A46EC52DD1A44100619FED /* iDared32bit */,
 			);
 			name = "iDared 32bit";
 			packageProductDependencies = (
@@ -245,7 +245,7 @@
 					};
 				};
 			};
-			buildConfigurationList = E3A46EBE2DD1A44100619FED /* Build configuration list for PBXProject "touchHLE" */;
+			buildConfigurationList = E3A46EBE2DD1A44100619FED /* Build configuration list for PBXProject "iDared32bit" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -430,7 +430,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
-				CODE_SIGN_ENTITLEMENTS = touchHLE/touchHLE.entitlements;
+				CODE_SIGN_ENTITLEMENTS = iDared32bit/iDared32bit.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				EXCLUDED_SOURCE_FILE_NAMES = "*.dylib";
 				GENERATE_INFOPLIST_FILE = YES;
@@ -466,7 +466,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
-				CODE_SIGN_ENTITLEMENTS = touchHLE/touchHLE.entitlements;
+				CODE_SIGN_ENTITLEMENTS = iDared32bit/iDared32bit.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				EXCLUDED_SOURCE_FILE_NAMES = "*.dylib";
 				GENERATE_INFOPLIST_FILE = YES;
@@ -565,7 +565,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
-				CODE_SIGN_ENTITLEMENTS = touchHLE/touchHLE.entitlements;
+				CODE_SIGN_ENTITLEMENTS = iDared32bit/iDared32bit.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = ../vendor/SDL/include;
@@ -597,7 +597,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		E3A46EBE2DD1A44100619FED /* Build configuration list for PBXProject "touchHLE" */ = {
+		E3A46EBE2DD1A44100619FED /* Build configuration list for PBXProject "iDared32bit" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				E3A46ED82DD1A44300619FED /* Debug */,

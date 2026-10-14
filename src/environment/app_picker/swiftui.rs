@@ -3,8 +3,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-//! On iOS, the app picker is native SwiftUI (`iphone/touchHLE/AppPicker.swift`)
-//! rather than drawn with our own UIKit.
+//! On iOS, the app picker is native SwiftUI
+//! (`iphone/iDared32bit/AppPicker.swift`) rather than drawn with our own
+//! UIKit.
 
 use super::{quick_option_args, quick_options, AppInfo, QuickOptionKind};
 use crate::image::Image;
