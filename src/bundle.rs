@@ -274,7 +274,7 @@ impl Bundle {
         };
         let mut image =
             Image::from_bytes(&bytes).map_err(|e| format!("Could not parse icon image: {e}"))?;
-        self.round_icon(&mut image);
+        Self::round_icon(&mut image);
         Ok(image)
     }
 
@@ -306,7 +306,7 @@ impl Bundle {
         let Some(mut image) = best else {
             return Ok(icon);
         };
-        self.round_icon(&mut image);
+        Self::round_icon(&mut image);
         Ok(image)
     }
 
@@ -361,32 +361,13 @@ impl Bundle {
         paths
     }
 
-    fn round_icon(&self, image: &mut Image) {
-        // UIPrerenderedIcon is used to avoid iOS applying a sheen effect,
-        // should be boolean, but some apps use a string, so we check both.
-        // See https://developer.apple.com/library/archive/qa/qa1614/_index.html
-        // In iOS 5+ this key moved under CFBundleIcons -> CFBundlePrimaryIcon;
-        // we check the pre-iOS-5 top-level key first, then the new location.
-        // Default if it does not exist is NO/false.
-        let add_sheen = !self
-            .plist
-            .get("UIPrerenderedIcon")
-            .or_else(|| {
-                self.plist
-                    .get("CFBundleIcons")
-                    .and_then(|v| v.as_dictionary())
-                    .and_then(|d| d.get("CFBundlePrimaryIcon"))
-                    .and_then(|v| v.as_dictionary())
-                    .and_then(|d| d.get("UIPrerenderedIcon"))
-            })
-            .and_then(|v| v.as_boolean().or(v.as_string().map(|s| s == "YES")))
-            .unwrap_or(false);
+    fn round_icon(image: &mut Image) {
         // iPhone OS icons are 57px by 57px and the OS always applies a
         // 10px radius rounded corner (see e.g. documentation of
         // UIPrerenderedIcon). If the icon is larger for some reason,
         // let's scale to match.
         let corner_radius = (10.0 / 57.0) * (image.dimensions().0 as f32);
-        image.round_corners(corner_radius, /* four_corners: */ true, add_sheen);
+        image.round_corners(corner_radius, /* four_corners: */ true);
     }
 
     pub fn main_nib_filename(&self, device_family: Option<DeviceFamily>) -> Option<&str> {

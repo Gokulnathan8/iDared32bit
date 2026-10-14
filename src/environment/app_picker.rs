@@ -523,7 +523,6 @@ fn show_app_picker_gui(
         image.round_corners(
             (10.0 / 57.0) * (image.dimensions().0 as f32),
             /* four_corners: */ true,
-            /* add_sheen: */ true,
         );
         image
     };
@@ -1238,7 +1237,6 @@ fn make_icon_from_glyph(
     cg_image::borrow_image_mut(&mut env.objc, cg_image).round_corners(
         (10.0 / 57.0) * ICON_SIZE.width,
         /* four_corners: */ true,
-        /* add_sheen: */ true,
     );
     CGContextRelease(env, context);
 

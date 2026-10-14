@@ -156,8 +156,8 @@ impl Image {
 
     // TODO: Eventually this should be in Core Animation instead?
     /// Modify the image to mask it with one to four anti-aliased rounded
-    /// corners, and add sheen if desired.
-    pub fn round_corners(&mut self, radius: f32, four_corners: bool, add_sheen: bool) {
+    /// corners.
+    pub fn round_corners(&mut self, radius: f32, four_corners: bool) {
         let (width, height) = self.dimensions();
         let (w_usize, h_usize) = (width as usize, height as usize);
         let (w, h) = (width as f32, height as f32);
@@ -167,11 +167,6 @@ impl Image {
         } else {
             (f32::INFINITY, f32::INFINITY)
         };
-        let (sheen_center_x, sheen_center_y, sheen_radius) = if add_sheen {
-            (w / 2.0, -(h / 2.0), h)
-        } else {
-            (f32::INFINITY, f32::INFINITY, 0.0)
-        };
         for y_usize in 0..h_usize {
             for x_usize in 0..w_usize {
                 let x = x_usize as f32;
@@ -180,12 +175,6 @@ impl Image {
                 let corner_x = (radius - x).max(x - right_corners_begin);
                 let corner_y = (radius - y).max(y - bottom_corners_begin);
                 let corner_circle_distance = corner_x.hypot(corner_y);
-                let x_edge_distance = (x).min(w - x - 1.0);
-                let y_edge_distance = (y).min(h - y - 1.0);
-                let actual_corner_distance = x_edge_distance.hypot(y_edge_distance);
-                let rounded_edge_distance = x_edge_distance
-                    .min(y_edge_distance)
-                    .min((radius.max(actual_corner_distance) - corner_circle_distance).max(0.0));
                 let icon_opacity = if corner_x > 0.0 && corner_y > 0.0 {
                     // Bad approximation of the pixel coverage of a filled arc.
                     let distance = (corner_circle_distance - radius).clamp(0.0, 1.0);
@@ -194,24 +183,9 @@ impl Image {
                 } else {
                     1.0
                 };
-                let sheen_opacity = {
-                    let distance = (x - sheen_center_x).hypot(y - sheen_center_y);
-                    // Bad approximation of the pixel coverage of a filled arc.
-                    let distance = (distance - sheen_radius).clamp(0.0, 1.0);
-                    let area = distance * distance;
-                    // The sheen is stronger at the top and close to edges.
-                    let taper = (1.0
-                        - ((y / h).sqrt() / 2.0)
-                        - (rounded_edge_distance / (h).hypot(w)).sqrt() / 2.0)
-                        * 0.75;
-                    // There is also extra shinyness around the rim.
-                    (1.0 - area) * taper
-                };
                 let rgba = &mut self.pixels_mut()[y_usize * w_usize * 4 + x_usize * 4..][..4];
                 for channel in rgba.iter_mut() {
-                    *channel = (*channel as f32 * icon_opacity * (1.0 - sheen_opacity)
-                        + 255.0 * icon_opacity * sheen_opacity)
-                        as u8;
+                    *channel = (*channel as f32 * icon_opacity) as u8;
                 }
             }
         }

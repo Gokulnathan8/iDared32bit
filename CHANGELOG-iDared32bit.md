@@ -8,6 +8,7 @@ Usability:
 
 - Fixed a black screen on iPhone and iPad when a game couldn't start. The app picker now shows why, and other games can still be started afterwards.
 - The app picker shows games' higher-resolution icons when they include them, so they look sharper on modern screens.
+- Game icons are shown as they are, without an added glossy shine.
 
 Compatibility:
 

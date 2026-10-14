@@ -42,9 +42,7 @@ pub fn app_picker(apps: Result<Vec<AppInfo>, String>) -> Result<(PathBuf, Vec<St
     // Swift draws a "?" on this for apps without an icon.
     let mut placeholder = Image::from_pixel_vec([128, 128, 128, 255].repeat(57 * 57), (57, 57));
     // Should match Bundle::load_icon().
-    placeholder.round_corners(
-        10.0, /* four_corners: */ true, /* add_sheen: */ true,
-    );
+    placeholder.round_corners(10.0, /* four_corners: */ true);
     let icons: Vec<&Image> = apps
         .iter()
         .map(|app| app.icon.as_ref().unwrap_or(&placeholder))
