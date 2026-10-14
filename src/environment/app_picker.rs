@@ -66,7 +66,12 @@ pub fn app_picker(options: Options) -> Result<(PathBuf, Vec<String>), String> {
                 .map(|loc| loc.lang)
                 .collect()
         });
-        enumerate_apps(&apps_dir, &languages)
+        // Only the iOS picker shows bigger icons at their full size.
+        #[cfg(target_os = "ios")]
+        let best_icons = swiftui::is_available();
+        #[cfg(not(target_os = "ios"))]
+        let best_icons = false;
+        enumerate_apps(&apps_dir, &languages, best_icons)
             .map_err(|err| {
                 format!(
                     "Couldn't get list of apps in the {} directory: {}.",
@@ -93,7 +98,11 @@ pub fn app_picker(options: Options) -> Result<(PathBuf, Vec<String>), String> {
     show_app_picker_gui(options, apps)
 }
 
-fn enumerate_apps(apps_dir: &Path, languages: &[String]) -> Result<Vec<AppInfo>, std::io::Error> {
+fn enumerate_apps(
+    apps_dir: &Path,
+    languages: &[String],
+    best_icons: bool,
+) -> Result<Vec<AppInfo>, std::io::Error> {
     let mut apps = Vec::new();
     for app in std::fs::read_dir(apps_dir)? {
         let app_path = app?.path();
@@ -121,7 +130,12 @@ fn enumerate_apps(apps_dir: &Path, languages: &[String]) -> Result<Vec<AppInfo>,
         // TODO: what if this crashes?
         let display_name = bundle.localized_display_name(&fs, languages);
 
-        let icon = match bundle.load_icon(&fs) {
+        let icon = if best_icons {
+            bundle.load_best_icon(&fs)
+        } else {
+            bundle.load_icon(&fs)
+        };
+        let icon = match icon {
             Ok(icon) => Some(icon),
             Err(e) => {
                 log!("Warning: couldn't load icon for app bundle {}: {} (displaying placeholder instead)", app_path.display(), e);

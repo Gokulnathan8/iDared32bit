@@ -274,6 +274,94 @@ impl Bundle {
         };
         let mut image =
             Image::from_bytes(&bytes).map_err(|e| format!("Could not parse icon image: {e}"))?;
+        self.round_icon(&mut image);
+        Ok(image)
+    }
+
+    /// Like [Self::load_icon], but uses a bigger version of the same icon if
+    /// there is one, e.g. an @2x or iPad icon. Whatever [Self::load_icon]
+    /// picks stays the fallback, so its rules still apply.
+    pub fn load_best_icon(&self, fs: &Fs) -> Result<Image, String> {
+        let icon = self.load_icon(fs)?;
+        let (width, height) = icon.dimensions();
+        if width != height {
+            return Ok(icon);
+        }
+        let mut best: Option<Image> = None;
+        for path in self.icon_candidates() {
+            let Ok(bytes) = fs.read(&path) else {
+                continue;
+            };
+            let Ok(image) = Image::from_bytes(&bytes) else {
+                continue;
+            };
+            // Apps list all sorts of images as icons, so only take a bigger
+            // square one, within reason.
+            let (w, h) = image.dimensions();
+            let biggest = best.as_ref().map_or(width, |b| b.dimensions().0);
+            if w == h && w > biggest && w <= 1024 {
+                best = Some(image);
+            }
+        }
+        let Some(mut image) = best else {
+            return Ok(icon);
+        };
+        self.round_icon(&mut image);
+        Ok(image)
+    }
+
+    /// Every file that could be the app's icon at some size: each icon named
+    /// in the plist, with and without @2x, @3x and ~ipad (see QA1686), plus
+    /// the Icon.png failsafe.
+    fn icon_candidates(&self) -> Vec<GuestPathBuf> {
+        fn files(v: Option<&plist::Value>) -> impl Iterator<Item = &str> {
+            v.and_then(|v| v.as_array())
+                .into_iter()
+                .flatten()
+                .filter_map(|v| v.as_string())
+        }
+        let mut names = vec!["Icon", "icon"];
+        for device in ["", "~ipad"] {
+            let key = format!("CFBundleIconFiles{device}");
+            names.extend(files(self.plist.get(&key)));
+            let key = format!("CFBundleIcons{device}");
+            names.extend(files(
+                self.plist
+                    .get(&key)
+                    .and_then(|v| v.as_dictionary())
+                    .and_then(|d| d.get("CFBundlePrimaryIcon"))
+                    .and_then(|v| v.as_dictionary())
+                    .and_then(|d| d.get("CFBundleIconFiles")),
+            ));
+        }
+        names.extend(
+            self.plist
+                .get("CFBundleIconFile")
+                .and_then(|v| v.as_string()),
+        );
+
+        let mut paths = Vec::new();
+        for name in names {
+            let ext = name.len().checked_sub(4).filter(|&i| {
+                name.get(i..)
+                    .is_some_and(|ext| ext.eq_ignore_ascii_case(".png"))
+            });
+            let base = if let Some(i) = ext {
+                paths.push(self.path.join(name));
+                &name[..i]
+            } else {
+                name
+            };
+            for scale in ["", "@2x", "@3x"] {
+                for device in ["", "~ipad"] {
+                    paths.push(self.path.join(format!("{base}{scale}{device}.png")));
+                }
+            }
+        }
+        paths
+    }
+
+    fn round_icon(&self, image: &mut Image) {
         // UIPrerenderedIcon is used to avoid iOS applying a sheen effect,
         // should be boolean, but some apps use a string, so we check both.
         // See https://developer.apple.com/library/archive/qa/qa1614/_index.html
@@ -299,7 +387,6 @@ impl Bundle {
         // let's scale to match.
         let corner_radius = (10.0 / 57.0) * (image.dimensions().0 as f32);
         image.round_corners(corner_radius, /* four_corners: */ true, add_sheen);
-        Ok(image)
     }
 
     pub fn main_nib_filename(&self, device_family: Option<DeviceFamily>) -> Option<&str> {
