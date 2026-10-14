@@ -311,8 +311,8 @@ impl Bundle {
     }
 
     /// Every file that could be the app's icon at some size: each icon named
-    /// in the plist, with and without @2x, @3x and ~ipad (see QA1686), plus
-    /// the Icon.png failsafe.
+    /// in the plist, with and without @2x, @3x, ~ipad and ~iphone (see
+    /// QA1686), plus the Icon.png failsafe.
     fn icon_candidates(&self) -> Vec<GuestPathBuf> {
         fn files(v: Option<&plist::Value>) -> impl Iterator<Item = &str> {
             v.and_then(|v| v.as_array())
@@ -352,8 +352,13 @@ impl Bundle {
             } else {
                 name
             };
+            // The scale goes before the device, e.g. Icon@2x~ipad.png.
+            let base = base
+                .strip_suffix("~ipad")
+                .or_else(|| base.strip_suffix("~iphone"))
+                .unwrap_or(base);
             for scale in ["", "@2x", "@3x"] {
-                for device in ["", "~ipad"] {
+                for device in ["", "~ipad", "~iphone"] {
                     paths.push(self.path.join(format!("{base}{scale}{device}.png")));
                 }
             }
