@@ -260,7 +260,11 @@ struct PickerLayout {
     init(size: CGSize, insets: UIEdgeInsets) {
         self.size = size
         self.insets = insets
-        headerContent = CGRect(x: 0, y: max(insets.top, 8), width: size.width, height: 72)
+        // Phones with a notch or Dynamic Island leave about 10pt below it in
+        // their safe area; use that. Older ones only leave room for the
+        // status bar.
+        let headerTop = insets.top > 40 ? insets.top - 10 : max(insets.top, 8)
+        headerContent = CGRect(x: 0, y: headerTop, width: size.width, height: 72)
         header = CGRect(x: 0, y: 0, width: size.width, height: headerContent.maxY + 6)
 
         // Sized and placed like the iOS 26 tab bar.
