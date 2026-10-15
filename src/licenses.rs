@@ -40,17 +40,18 @@ The iDared 32bit name, logo and app icon are © 2026 Alex Martin, all rights
 reserved. They are not licensed under the MPL-2.0 or any other open-source
 license.
 
-This executable is not licensed under the GNU General Public License (GPL).
-Its own code, and every library compiled into it, is licensed under MPL-2.0 or
-under more permissive terms, as listed below. None of it is GPL-licensed.
+This program is not licensed under the GNU General Public License (GPL). Its
+own code, and every library it is built from, is licensed under MPL-2.0 or
+under more permissive terms, as listed below.
 
 Under the MPL-2.0, this program is provided on an \"as is\" basis, without
 warranty of any kind; see sections 6 and 7 of the license.
 
 Separately from the program itself, it carries copies of the libgcc and
 libstdc++ libraries from Apple's iPhone OS SDK, which apps running inside the
-emulated device link against. They are separate programs, licensed under the
-GNU GPL version 2 or later. They run only inside the emulated device, are not
+emulated device link against. On iOS, these copies are stored inside the app's
+executable file, as data. They are separate programs, licensed under the GNU
+GPL version 2 or later. They run only inside the emulated device, are not
 linked with iDared 32bit, and do not change its license. Their license notices,
 and a written offer for their source code, are included with this program.
 ";
@@ -185,7 +186,38 @@ This distribution of iDared 32bit includes Noto Sans CJK fonts, available under 
 following license:
 ";
 
+/// The license files read below, embedded for iOS: users can't open the
+/// app bundle, and the files aren't at these paths inside it.
+fn embedded_in_file(path: &str) -> Option<&'static str> {
+    macro_rules! file {
+        ($path:literal) => {
+            (
+                $path,
+                include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/", $path)),
+            )
+        };
+    }
+    const FILES: &[(&str, &str)] = &[
+        file!("touchHLE_dylibs/README.md"),
+        file!("touchHLE_dylibs/COPYING.libz"),
+        file!("touchHLE_dylibs/COPYING.libxml2"),
+        file!("touchHLE_fonts/LICENSE.liberation"),
+        file!("touchHLE_fonts/LICENSE.noto"),
+    ];
+    FILES
+        .iter()
+        .find(|&&(p, _)| p == path)
+        .map(|&(_, text)| text)
+}
+
 fn read_bundled_file(path: &str) -> String {
+    debug_assert!(
+        embedded_in_file(path).is_some(),
+        "{path} must be in embedded_in_file() for iOS",
+    );
+    if cfg!(target_os = "ios") {
+        return embedded_in_file(path).unwrap().to_owned();
+    }
     use std::io::Read;
     let mut res = String::new();
     crate::paths::ResourceFile::open(path)
@@ -302,4 +334,15 @@ fn test_external_files_license_text() {
         /* resources_are_external_files: */ true,
     )
     .unwrap();
+}
+
+#[cfg(test)]
+#[test]
+fn test_internal_files_license_text() {
+    // What Android and iOS show, including the written offer for the GPL
+    // libraries. read_bundled_file() checks iOS has each file embedded.
+    let mut text = String::new();
+    print(&mut text, /* resources_are_external_files: */ false).unwrap();
+    assert!(text.contains(INTERNAL_FSF_DYLIBS_OFFER));
+    assert!(!text.contains(EXTERNAL_FILES_CAVEAT));
 }

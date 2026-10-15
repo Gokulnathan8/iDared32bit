@@ -2,6 +2,12 @@
 
 iDared 32bit is based on [touchHLE](https://touchhle.org/). This file lists only iDared 32bit's own changes. The touchHLE changes it includes are in [CHANGELOG.md](CHANGELOG.md), which is touchHLE's own changelog, kept exactly as it is upstream.
 
+## NEXT
+
+Other:
+
+- On iPhone and iPad, the license information now includes the license notices of the libraries and fonts that games use inside the emulated device, and the written offer for the source code of the GPL-licensed libgcc and libstdc++ libraries. These were missing there.
+
 ## v1.4.1 (2026-10-12)
 
 Compatibility:

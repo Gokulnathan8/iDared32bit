@@ -174,7 +174,9 @@ impl std::fmt::Debug for ResourceFile {
 
 /// Whether various resources are in user-accessible files. If they aren't,
 /// touchHLE has to be able to display their license terms.
-pub const RESOURCES_ARE_EXTERNAL_FILES: bool = cfg!(not(target_os = "android"));
+/// Not on iOS either: users can't open the app bundle.
+pub const RESOURCES_ARE_EXTERNAL_FILES: bool =
+    cfg!(not(any(target_os = "android", target_os = "ios")));
 
 /// Name of the directory where the user can put apps if they want them to
 /// appear in the app picker.
