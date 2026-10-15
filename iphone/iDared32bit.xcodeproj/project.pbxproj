@@ -152,14 +152,14 @@
 		E36F91812DD1BCBD00950EF2 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
-				E36F91AD2DD1BCFA00950EF2 /* touchHLE_dylibs */,
+				E36F91AD2DD1BCFA00950EF2 /* Libs */,
 				E36F91AB2DD1BCF300950EF2 /* Fonts */,
 				4FE48DA72F8C117700C368B5 /* DefaultOptions.txt */,
 			);
 			name = Assets;
 			sourceTree = "<group>";
 		};
-		E36F91AD2DD1BCFA00950EF2 /* touchHLE_dylibs */ = {
+		E36F91AD2DD1BCFA00950EF2 /* Libs */ = {
 			isa = PBXGroup;
 			children = (
 				E3FACE0000000000000010 /* README.md */,
@@ -174,7 +174,7 @@
 				E3FACE0000000000000019 /* libxml2.2.dylib */,
 				E3FACE000000000000001A /* libz.1.2.3.dylib */,
 			);
-			name = touchHLE_dylibs;
+			name = Libs;
 			path = ../touchHLE_dylibs;
 			sourceTree = "<absolute>";
 		};
