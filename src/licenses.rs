@@ -16,6 +16,9 @@ The maintainer (@apexad) contributed to touchHLE until this App Store
 release, which the touchHLE project did not want, and is no longer part of
 that project. This build includes changes that are not in touchHLE.
 iDared 32bit is not affiliated with or endorsed by the touchHLE project.
+Please don't ask touchHLE for support with iDared 32bit, or submit results
+to touchHLE's compatibility database. Contact support@idared32bit-emu.com
+instead.
 
 Source code for iDared 32bit, including the version of touchHLE it is based
 on, is available at <https://github.com/iDared32bit-emu/iDared32bit>.

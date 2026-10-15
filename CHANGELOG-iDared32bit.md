@@ -12,6 +12,7 @@ Usability:
 
 Other:
 
+- The About screen asks you to contact iDared 32bit's support, not touchHLE, with questions, problems and compatibility results.
 - On iPhone and iPad, the license information now includes the license notices of the libraries and fonts that games use inside the emulated device, and the written offer for the source code of the GPL-licensed libgcc and libstdc++ libraries. These were missing there.
 
 ## v1.4.1 (2026-10-12)
