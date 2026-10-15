@@ -7,6 +7,7 @@ iDared 32bit is based on [touchHLE](https://touchhle.org/). This file lists only
 Usability:
 
 - The folders and files in the Files app have simpler names: `Games`, `Saves`, `Options.txt`, `Wallpaper.png` and `Log.txt`. Existing ones are moved to the new names automatically.
+- Messages in the app and in `Log.txt` say iDared 32bit instead of touchHLE.
 
 Other:
 

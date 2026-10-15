@@ -31,7 +31,7 @@ impl FpsCounter {
         if duration >= Duration::from_secs(1) {
             self.time = now;
             echo!(
-                "touchHLE: {} FPS: {:.2}",
+                "{} FPS: {:.2}",
                 label,
                 std::mem::take(&mut self.frames) as f32 / duration.as_secs_f32()
             );

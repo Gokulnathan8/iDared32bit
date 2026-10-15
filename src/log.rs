@@ -18,6 +18,15 @@ use std::sync::LazyLock;
 /// replacing any older one, so there is only ever one previous log. On iOS
 /// and Android, getting past a hang or black screen means relaunching, which
 /// would otherwise overwrite the log of the run that went wrong.
+/// A module's path without the crate's name (touchHLE), which users see in
+/// the log.
+pub fn module_name(path: &'static str) -> &'static str {
+    match path {
+        "touchHLE" => "iDared 32bit",
+        _ => path.strip_prefix("touchHLE::").unwrap_or(path),
+    }
+}
+
 pub fn get_log_file() -> &'static File {
     static LOG_FILE: LazyLock<File> = LazyLock::new(|| {
         let base_path = crate::paths::user_data_base_path();
@@ -39,7 +48,7 @@ pub fn get_log_file() -> &'static File {
 /// from.
 macro_rules! log {
     ($($arg:tt)+) => {
-        echo!("{}: {}", module_path!(), format_args!($($arg)+));
+        echo!("{}: {}", $crate::log::module_name(module_path!()), format_args!($($arg)+));
     }
 }
 
@@ -47,7 +56,11 @@ macro_rules! log {
 /// panicking.
 macro_rules! log_no_panic {
     ($($arg:tt)+) => {
-        echo_no_panic!("{}: {}", module_path!(), format_args!($($arg)+));
+        echo_no_panic!(
+            "{}: {}",
+            $crate::log::module_name(module_path!()),
+            format_args!($($arg)+)
+        );
     }
 }
 
@@ -126,3 +139,15 @@ macro_rules! echo_no_panic {
 /// Put modules to enable [log_dbg] for here, e.g. "touchHLE::mem" to see when
 /// memory is allocated and freed.
 pub const ENABLED_MODULES: &[&str] = &[];
+
+#[cfg(test)]
+#[test]
+fn test_module_name() {
+    assert_eq!(
+        module_name("touchHLE::frameworks::uikit"),
+        "frameworks::uikit"
+    );
+    assert_eq!(module_name("touchHLE"), "iDared 32bit");
+    assert_eq!(module_name("other_crate::thing"), "other_crate::thing");
+    assert_eq!(module_name("touchHLE_version"), "touchHLE_version");
+}
