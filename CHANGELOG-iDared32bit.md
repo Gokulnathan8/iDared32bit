@@ -8,6 +8,7 @@ Usability:
 
 - The folders and files in the Files app have simpler names: `Games`, `Saves`, `Options.txt`, `Wallpaper.png` and `Log.txt`. Existing ones are moved to the new names automatically.
 - Messages in the app and in `Log.txt` say iDared 32bit instead of touchHLE.
+- `OPTIONS_HELP.txt` and the explanation at the top of `Options.txt` are rewritten to talk about iDared 32bit and games. Existing files are updated automatically, keeping your own options.
 
 Other:
 

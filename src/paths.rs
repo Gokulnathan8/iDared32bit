@@ -381,16 +381,42 @@ pub fn prepopulate_user_data_dir() {
     }
 
     let user_options = base_path.join(USER_OPTIONS_FILE);
+    let content = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/touchHLE_options.txt"));
     if !user_options.is_file() {
-        let content = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/touchHLE_options.txt"));
         create_file(&user_options, content);
+    } else if let Ok(old) = std::fs::read_to_string(&user_options) {
+        // Older versions created it with this text. Keep the user's lines.
+        if let Some(rest) = old.strip_prefix(OLD_USER_OPTIONS_TEMPLATE) {
+            create_file(&user_options, &format!("{content}{rest}"));
+        }
     }
 
+    // Always the current text, as older versions' text is outdated.
     let options_help = base_path.join("OPTIONS_HELP.txt");
-    if !options_help.is_file() {
+    if std::fs::read_to_string(&options_help).ok().as_deref() != Some(crate::options::OPTIONS_HELP)
+    {
         create_file(&options_help, crate::options::OPTIONS_HELP);
     }
 }
+
+/// The text older versions created the user's options file with.
+const OLD_USER_OPTIONS_TEMPLATE: &str = "\
+# This file lets you specify the options you want to use for various apps.
+#
+# Options in this file take precedence over ones in touchHLE_default_options.txt
+#
+# ---
+#
+# Each line in this file specifies options for an app; there should only be one
+# line per app. A line should consist of the identifier for an app, followed by
+# a colon (:), followed by the options to apply. To find out an app's
+# identifier, you can run it in touchHLE and look at the “App bundle info”
+# output. To get a list of possible options, see OPTIONS_HELP.txt or run
+# touchHLE with the --help flag.
+#
+# Text on a line following a hash sign (#) is treated as a comment and ignored.
+# Empty lines are also ignored.
+";
 
 /// Older iOS versions used the other platforms' names for the user's files.
 /// Move anything still under an old name to its new one. Nothing is
