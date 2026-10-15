@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		4F5818492F84076100018CE3 /* libtouchHLE_static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F5818482F84076100018CE3 /* libtouchHLE_static.a */; };
-		4FE48DA82F8C117700C368B5 /* touchHLE_default_options.txt in Resources */ = {isa = PBXBuildFile; fileRef = 4FE48DA72F8C117700C368B5 /* touchHLE_default_options.txt */; };
+		4F5818492F84076100018CE3 /* libiDared32bit_static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F5818482F84076100018CE3 /* libiDared32bit_static.a */; };
+		4FE48DA82F8C117700C368B5 /* DefaultOptions.txt in Resources */ = {isa = PBXBuildFile; fileRef = 4FE48DA72F8C117700C368B5 /* DefaultOptions.txt */; };
 		E36F8FBD2DD1B0D000950EF2 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E36F8FBA2DD1B0D000950EF2 /* CoreFoundation.framework */; };
 		E36F8FBF2DD1B0D000950EF2 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E36F8FBC2DD1B0D000950EF2 /* Foundation.framework */; };
 		E36F8FC32DD1B0E300950EF2 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E36F8FC02DD1B0E300950EF2 /* CoreGraphics.framework */; };
@@ -24,7 +24,7 @@
 		E36F8FD52DD1B14F00950EF2 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E36F8FD42DD1B14F00950EF2 /* QuartzCore.framework */; };
 		E36F8FD72DD1B16400950EF2 /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = E36F8FD62DD1B16400950EF2 /* libc++.tbd */; };
 		E36F8FD92DD1B17400950EF2 /* libiconv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = E36F8FD82DD1B17400950EF2 /* libiconv.tbd */; };
-		E36F91AC2DD1BCF600950EF2 /* touchHLE_fonts in Resources */ = {isa = PBXBuildFile; fileRef = E36F91AB2DD1BCF300950EF2 /* touchHLE_fonts */; };
+		E36F91AC2DD1BCF600950EF2 /* Fonts in Resources */ = {isa = PBXBuildFile; fileRef = E36F91AB2DD1BCF300950EF2 /* Fonts */; };
 		E3FACE0000000000000020 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = E3FACE0000000000000010 /* README.md */; };
 		E3FACE0000000000000021 /* COPYING.libgcc in Resources */ = {isa = PBXBuildFile; fileRef = E3FACE0000000000000011 /* COPYING.libgcc */; };
 		E3FACE0000000000000022 /* COPYING.libsqlite3 in Resources */ = {isa = PBXBuildFile; fileRef = E3FACE0000000000000012 /* COPYING.libsqlite3 */; };
@@ -34,8 +34,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		4F5818482F84076100018CE3 /* libtouchHLE_static.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libtouchHLE_static.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		4FE48DA72F8C117700C368B5 /* touchHLE_default_options.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = touchHLE_default_options.txt; path = ../touchHLE_default_options.txt; sourceTree = "<absolute>"; };
+		4F5818482F84076100018CE3 /* libiDared32bit_static.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libiDared32bit_static.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		4FE48DA72F8C117700C368B5 /* DefaultOptions.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = DefaultOptions.txt; path = DefaultOptions.txt; sourceTree = SOURCE_ROOT; };
 		E36F8F702DD1AB1500950EF2 /* touchHLE.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = touchHLE.xcodeproj; path = ../touchHLE.xcodeproj; sourceTree = "<absolute>"; };
 		E36F8FBA2DD1B0D000950EF2 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
 		E36F8FBB2DD1B0D000950EF2 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
@@ -53,7 +53,7 @@
 		E36F8FD42DD1B14F00950EF2 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		E36F8FD62DD1B16400950EF2 /* libc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libc++.tbd"; path = "usr/lib/libc++.tbd"; sourceTree = SDKROOT; };
 		E36F8FD82DD1B17400950EF2 /* libiconv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libiconv.tbd; path = usr/lib/libiconv.tbd; sourceTree = SDKROOT; };
-		E36F91AB2DD1BCF300950EF2 /* touchHLE_fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = touchHLE_fonts; path = ../touchHLE_fonts; sourceTree = SOURCE_ROOT; };
+		E36F91AB2DD1BCF300950EF2 /* Fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Fonts; path = Fonts; sourceTree = SOURCE_ROOT; };
 		E3A46EC32DD1A44100619FED /* iDared 32bit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "iDared 32bit.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E3A46EDD2DD1A79A00619FED /* SDL.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SDL.xcodeproj; path = ../vendor/SDL/Xcode/SDL/SDL.xcodeproj; sourceTree = "<absolute>"; };
 		E3C0F1600000000000000001 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = SOURCE_ROOT; };
@@ -109,7 +109,7 @@
 				E36F8FC32DD1B0E300950EF2 /* CoreGraphics.framework in Frameworks */,
 				E36F8FC42DD1B0E300950EF2 /* CoreBluetooth.framework in Frameworks */,
 				E36F8FC52DD1B0E300950EF2 /* CoreHaptics.framework in Frameworks */,
-				4F5818492F84076100018CE3 /* libtouchHLE_static.a in Frameworks */,
+				4F5818492F84076100018CE3 /* libiDared32bit_static.a in Frameworks */,
 				E36F8FBD2DD1B0D000950EF2 /* CoreFoundation.framework in Frameworks */,
 				E36F8FBF2DD1B0D000950EF2 /* Foundation.framework in Frameworks */,
 			);
@@ -128,7 +128,7 @@
 		E36F8F7E2DD1AB2100950EF2 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				4F5818482F84076100018CE3 /* libtouchHLE_static.a */,
+				4F5818482F84076100018CE3 /* libiDared32bit_static.a */,
 				E36F8FD82DD1B17400950EF2 /* libiconv.tbd */,
 				E36F8FD62DD1B16400950EF2 /* libc++.tbd */,
 				E36F8FD42DD1B14F00950EF2 /* QuartzCore.framework */,
@@ -153,8 +153,8 @@
 			isa = PBXGroup;
 			children = (
 				E36F91AD2DD1BCFA00950EF2 /* touchHLE_dylibs */,
-				E36F91AB2DD1BCF300950EF2 /* touchHLE_fonts */,
-				4FE48DA72F8C117700C368B5 /* touchHLE_default_options.txt */,
+				E36F91AB2DD1BCF300950EF2 /* Fonts */,
+				4FE48DA72F8C117700C368B5 /* DefaultOptions.txt */,
 			);
 			name = Assets;
 			sourceTree = "<group>";
@@ -279,14 +279,14 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E36F91AC2DD1BCF600950EF2 /* touchHLE_fonts in Resources */,
+				E36F91AC2DD1BCF600950EF2 /* Fonts in Resources */,
 				E3FACE0000000000000020 /* README.md in Resources */,
 				E3FACE0000000000000021 /* COPYING.libgcc in Resources */,
 				E3FACE0000000000000022 /* COPYING.libsqlite3 in Resources */,
 				E3FACE0000000000000023 /* COPYING.libstdcxx in Resources */,
 				E3FACE0000000000000024 /* COPYING.libxml2 in Resources */,
 				E3FACE0000000000000025 /* COPYING.libz in Resources */,
-				4FE48DA82F8C117700C368B5 /* touchHLE_default_options.txt in Resources */,
+				4FE48DA82F8C117700C368B5 /* DefaultOptions.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -30,10 +30,17 @@ use std::path::{Path, PathBuf};
 pub const DYLIBS_DIR: &str = "touchHLE_dylibs";
 
 /// Name of the directory containing fonts bundled with touchHLE.
+/// The iOS app bundle uses its own names, via symlinks in `iphone/`.
+#[cfg(not(target_os = "ios"))]
 pub const FONTS_DIR: &str = "touchHLE_fonts";
+#[cfg(target_os = "ios")]
+pub const FONTS_DIR: &str = "Fonts";
 
 /// Name of the file containing touchHLE's default options for various apps.
+#[cfg(not(target_os = "ios"))]
 pub const DEFAULT_OPTIONS_FILE: &str = "touchHLE_default_options.txt";
+#[cfg(target_os = "ios")]
+pub const DEFAULT_OPTIONS_FILE: &str = "DefaultOptions.txt";
 
 /// macOS-only: If touchHLE is located in a .app bundle, return the path of the
 /// Resources directory. If touchHLE is not located in a .app bundle, return

@@ -207,6 +207,9 @@ fn embedded_in_file(path: &str) -> Option<&'static str> {
         file!("touchHLE_fonts/LICENSE.liberation"),
         file!("touchHLE_fonts/LICENSE.noto"),
     ];
+    // The keys are the files' paths in the repository, which differ from
+    // the iOS app bundle's for the fonts.
+    let path = path.replacen(crate::paths::FONTS_DIR, "touchHLE_fonts", 1);
     FILES
         .iter()
         .find(|&&(p, _)| p == path)
