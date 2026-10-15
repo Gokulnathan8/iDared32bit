@@ -323,6 +323,17 @@ impl Environment {
         if ENVIRONMENT_INSTANCE_EXISTS.swap(true, std::sync::atomic::Ordering::SeqCst) {
             return Err("Only one (real) Environment can exist at a time!".to_string());
         }
+        // If this fails, there's no Environment whose drop would clear it, and
+        // the next app could never start.
+        struct ClearOnFailure(bool);
+        impl Drop for ClearOnFailure {
+            fn drop(&mut self) {
+                if self.0 {
+                    ENVIRONMENT_INSTANCE_EXISTS.store(false, std::sync::atomic::Ordering::SeqCst);
+                }
+            }
+        }
+        let mut clear_on_failure = ClearOnFailure(true);
 
         // Certain apps need to launch in a non-portrait orientation, and this
         // should be handled before creating the window because handling of
@@ -765,6 +776,7 @@ impl Environment {
         }
 
         env.cpu.branch(entry_point_addr);
+        clear_on_failure.0 = false;
         Ok(env)
     }
 
