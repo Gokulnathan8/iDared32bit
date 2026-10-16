@@ -2,6 +2,12 @@
 
 iDared 32bit is based on [touchHLE](https://touchhle.org/). This file lists only iDared 32bit's own changes. The touchHLE changes it includes are in [CHANGELOG.md](CHANGELOG.md), which is touchHLE's own changelog, kept exactly as it is upstream.
 
+## NEXT
+
+Usability:
+
+- Fixed a black screen on iPhone and iPad when a game couldn't start. The app picker now shows why, and other games can still be started afterwards.
+
 ## v1.4.2 (2026-10-14)
 
 Usability:

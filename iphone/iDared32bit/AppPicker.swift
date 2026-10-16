@@ -35,6 +35,8 @@ struct PickerInput: Decodable {
     let fileManagerURL: String?
     let websiteURL: String
     let quickOptions: [QuickOption]
+    /// Why the last game couldn't start, if it couldn't.
+    let startError: String?
 }
 
 /// Called from Rust. Shows the picker until an app is picked, then returns
@@ -143,6 +145,7 @@ final class PickerModel: ObservableObject {
     @Published var showingQuickOptions = false
     @Published var showingCopyright = false
     @Published var copyrightPage = 0
+    @Published var showingStartError: Bool
     var copyrightPages: [String] = []
 
     /// The value of each of the quick options.
@@ -155,6 +158,7 @@ final class PickerModel: ObservableObject {
         self.input = input
         self.icons = icons
         quickOptionValues = input.quickOptions.map(\.defaultValue)
+        showingStartError = input.startError != nil
         wallpaper = input.wallpaperPath.flatMap { UIImage(contentsOfFile: $0) }
     }
 
@@ -353,6 +357,11 @@ struct PickerView: View {
             .statusBarHidden(true)
             .sheet(isPresented: $model.showingQuickOptions) {
                 QuickOptionsView(model: model)
+            }
+            .alert("Couldn't Start the Game", isPresented: $model.showingStartError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(model.input.startError ?? "")
             }
     }
 

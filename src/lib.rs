@@ -423,6 +423,12 @@ fn run_app(
         Ok(ret) => match ret {
             Ok(env) => env,
             Err(e) => {
+                #[cfg(target_os = "ios")]
+                if options.popup_errors {
+                    echo!("Couldn't start the game: {}", e);
+                    *window::START_ERROR.lock().unwrap() = Some(e);
+                    return Ok(true);
+                }
                 if options.popup_errors {
                     window::show_error_messagebox(None, e.as_str());
                 }

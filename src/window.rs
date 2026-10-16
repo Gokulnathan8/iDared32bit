@@ -2067,6 +2067,11 @@ pub fn open_url(env: &mut Environment, url: &str) -> Result<(), String> {
     env.on_parent_stack_in_coroutine(|_, _| sdl2::url::open_url(url).map_err(|e| e.to_string()))
 }
 
+/// Why the last game couldn't start, for the iOS app picker to show. A
+/// messagebox can't be used there: it's never shown, and the app hangs.
+#[cfg(target_os = "ios")]
+pub static START_ERROR: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);
+
 /// Set when the user picks "Return to App Picker" in the error messagebox.
 pub static RETURN_TO_APP_PICKER_AFTER_ERROR: std::sync::atomic::AtomicBool =
     std::sync::atomic::AtomicBool::new(false);

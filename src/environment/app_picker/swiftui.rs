@@ -93,7 +93,8 @@ pub fn app_picker(apps: Result<Vec<AppInfo>, String>) -> Result<(PathBuf, Vec<St
     let json = format!(
         "{{\"apps\":[{}],\"error\":{},\"wallpaperPath\":{},\"branding\":{},\
          \"shortVersionText\":{},\"copyright\":{},\
-         \"fileManagerURL\":{},\"websiteURL\":{},\"quickOptions\":[{}]}}",
+         \"fileManagerURL\":{},\"websiteURL\":{},\"quickOptions\":[{}],\
+         \"startError\":{}}}",
         apps_json.join(","),
         optional(error),
         optional(wallpaper.map(|p| p.to_string_lossy().into_owned())),
@@ -103,6 +104,7 @@ pub fn app_picker(apps: Result<Vec<AppInfo>, String>) -> Result<(PathBuf, Vec<St
         optional(paths::url_for_opening_user_data_dir().ok()),
         json_string("https://iDared32bit-emu.com/"),
         quick_options_json.join(","),
+        optional(crate::window::START_ERROR.lock().unwrap().take()),
     );
     // Control characters, including NUL, are escaped above.
     let json = CString::new(json).unwrap();
