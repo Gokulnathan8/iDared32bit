@@ -27,7 +27,7 @@ use std::path::{Path, PathBuf};
 
 /// Name of the directory containing ARMv6 dynamic libraries bundled with
 /// touchHLE.
-pub const DYLIBS_DIR: &str = "touchHLE_dylibs";
+pub const DYLIBS_DIR: &str = "dylibs";
 
 /// Name of the directory containing fonts bundled with touchHLE.
 /// The iOS app bundle uses its own names, via symlinks in `iphone/`.
@@ -100,38 +100,38 @@ impl Seek for ResourceFileInner {
 #[cfg(target_os = "ios")]
 fn embedded_dylib_bytes(path: &str) -> Option<&'static [u8]> {
     match path {
-        "touchHLE_dylibs/libgcc_s.1.dylib" => Some(
+        "dylibs/libgcc_s.1.dylib" => Some(
             include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
-                "/touchHLE_dylibs/libgcc_s.1.dylib"
+                "/dylibs/libgcc_s.1.dylib"
             ))
             .as_slice(),
         ),
-        "touchHLE_dylibs/libsqlite3.dylib" => Some(
+        "dylibs/libsqlite3.dylib" => Some(
             include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
-                "/touchHLE_dylibs/libsqlite3.dylib"
+                "/dylibs/libsqlite3.dylib"
             ))
             .as_slice(),
         ),
-        "touchHLE_dylibs/libstdc++.6.0.9.dylib" => Some(
+        "dylibs/libstdc++.6.0.9.dylib" => Some(
             include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
-                "/touchHLE_dylibs/libstdc++.6.0.9.dylib"
+                "/dylibs/libstdc++.6.0.9.dylib"
             ))
             .as_slice(),
         ),
-        "touchHLE_dylibs/libxml2.2.dylib" => Some(
+        "dylibs/libxml2.2.dylib" => Some(
             include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
-                "/touchHLE_dylibs/libxml2.2.dylib"
+                "/dylibs/libxml2.2.dylib"
             ))
             .as_slice(),
         ),
-        "touchHLE_dylibs/libz.1.2.3.dylib" => Some(
+        "dylibs/libz.1.2.3.dylib" => Some(
             include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
-                "/touchHLE_dylibs/libz.1.2.3.dylib"
+                "/dylibs/libz.1.2.3.dylib"
             ))
             .as_slice(),
         ),

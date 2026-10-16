@@ -134,7 +134,7 @@ const PVRTD_LICENSE: &str = include_str!(concat!(
 const EXTERNAL_FILES_CAVEAT: &str = "
 The following authorship, copyright and license information relates to this
 executable. Please note that different licensing terms apply to the bundled
-dynamic libraries (in touchHLE_dylibs/) and fonts (in touchHLE_fonts/). Please
+dynamic libraries (in dylibs/) and fonts (in touchHLE_fonts/). Please
 consult the respective directories for more information.
 ";
 
@@ -201,9 +201,9 @@ fn embedded_in_file(path: &str) -> Option<&'static str> {
         };
     }
     const FILES: &[(&str, &str)] = &[
-        file!("touchHLE_dylibs/README.md"),
-        file!("touchHLE_dylibs/COPYING.libz"),
-        file!("touchHLE_dylibs/COPYING.libxml2"),
+        file!("dylibs/README.md"),
+        file!("dylibs/COPYING.libz"),
+        file!("dylibs/COPYING.libxml2"),
         file!("touchHLE_fonts/LICENSE.liberation"),
         file!("touchHLE_fonts/LICENSE.noto"),
     ];

@@ -175,7 +175,7 @@
 				E3FACE000000000000001A /* libz.1.2.3.dylib */,
 			);
 			name = Libs;
-			path = ../touchHLE_dylibs;
+			path = ../dylibs;
 			sourceTree = "<absolute>";
 		};
 		E3A46EBA2DD1A44100619FED = {

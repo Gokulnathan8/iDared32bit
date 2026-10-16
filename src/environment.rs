@@ -2322,7 +2322,7 @@ mod dylib_sorting_tests {
             let mut mem = Mem::new();
             mem.set_null_segment_size(0x1000);
 
-            let libgcc_bytes = std::fs::read("touchHLE_dylibs/libgcc_s.1.dylib").unwrap();
+            let libgcc_bytes = std::fs::read("dylibs/libgcc_s.1.dylib").unwrap();
             let libgcc = MachO::load_from_bytes(
                 &libgcc_bytes,
                 &mut mem,
@@ -2331,7 +2331,7 @@ mod dylib_sorting_tests {
             )
             .unwrap();
 
-            let libstdcxx_bytes = std::fs::read("touchHLE_dylibs/libstdc++.6.0.9.dylib").unwrap();
+            let libstdcxx_bytes = std::fs::read("dylibs/libstdc++.6.0.9.dylib").unwrap();
             let libstdcxx = MachO::load_from_bytes(
                 &libstdcxx_bytes,
                 &mut mem,

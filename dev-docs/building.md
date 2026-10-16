@@ -80,7 +80,7 @@ The app project builds everything it needs itself. The Rust code is built by the
 
 The project also has a Debug-Simulator configuration for the iOS Simulator. For a release, use Product › Archive, then distribute the archive from the Organizer window.
 
-The bundled guest libraries (`touchHLE_dylibs`) are embedded in the app, so there is nothing to copy. Apps to run go in the `touchHLE_apps` folder, which the app shows in the Files app.
+The bundled guest libraries (`dylibs`) are embedded in the app, so there is nothing to copy. Apps to run go in the `touchHLE_apps` folder, which the app shows in the Files app.
 
 ### Desktop (macOS, Windows, Linux)
 
@@ -120,6 +120,6 @@ cargo ndk -t arm64-v8a build
 
 ## Other considerations
 
-On platforms other than iOS, the `touchHLE_dylibs` and `touchHLE_fonts` directories contain files that the resulting binary will need at runtime, so you'll need to copy them if you want to distribute the result. You also should include the license files.
+On platforms other than iOS, the `dylibs` and `touchHLE_fonts` directories contain files that the resulting binary will need at runtime, so you'll need to copy them if you want to distribute the result. You also should include the license files.
 
 If you're building iDared 32bit for the purpose of contributing, you might want to generate HTML documentation with `cargo doc --workspace --no-deps --open`. The code has been extensively commented with `cargo doc` in mind.

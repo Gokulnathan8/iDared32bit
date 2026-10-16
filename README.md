@@ -10,7 +10,7 @@ Website (including the privacy policy): <https://idared32bit-emu.com/>
 ## What's different in this build
 
 - **iOS host app** which runs as a native app on iPhone and iPad.
-- **An interpreter instead of Dynarmic** for CPU emulation. The CPU core is an ARM interpreter derived from [mGBA](https://github.com/mgba-emu/mgba)'s, extended from ARMv4T to ARMv7s, with Thumb-2, VFPv3/VFPv4 and NEON. The only code run by the [emulated CPU](vendor/mgba_arm/) is the app binary and [a handful of libraries](touchHLE_dylibs/).
+- **An interpreter instead of Dynarmic** for CPU emulation. The CPU core is an ARM interpreter derived from [mGBA](https://github.com/mgba-emu/mgba)'s, extended from ARMv4T to ARMv7s, with Thumb-2, VFPv3/VFPv4 and NEON. The only code run by the [emulated CPU](vendor/mgba_arm/) is the app binary and [a handful of libraries](dylibs/).
 - **OpenAL via SDL Audio** for the guest-facing `OpenAL.framework` and Audio Toolbox playback, instead of the OpenAL Soft C library.
 - **Changes not in upstream touchHLE** — the maintainer ([@apexad](https://github.com/apexad)) contributed to touchHLE until this App Store release, which the touchHLE project did not want, and is no longer part of that project. This build includes changes, some originally written for touchHLE, that enable games not supported upstream.
 
@@ -76,7 +76,7 @@ iDared 32bit is based on touchHLE. Its source code, including touchHLE's and the
 
 **Distributed binaries are also licensed under the MPL-2.0. They are not licensed under the GNU General Public License (GPL).** Everything compiled into the executable is licensed under the MPL-2.0 or under more permissive terms; none of it is GPL-licensed.
 
-The app carries copies of the libgcc and libstdc++ dynamic libraries from Apple's iPhone OS SDK (`touchHLE_dylibs/`), which apps running inside the emulated device link against. These are separate programs, licensed under the GNU GPL version 2 or later. They run only inside the emulated device, are not linked with iDared 32bit, and do not change its license. Their license notices, and a written offer for their source code, are included in the app's license information.
+The app carries copies of the libgcc and libstdc++ dynamic libraries from Apple's iPhone OS SDK (`dylibs/`), which apps running inside the emulated device link against. These are separate programs, licensed under the GNU GPL version 2 or later. They run only inside the emulated device, are not linked with iDared 32bit, and do not change its license. Their license notices, and a written offer for their source code, are included in the app's license information.
 
 Copyright, authorship, and license notices for touchHLE, mGBA, and bundled components are preserved in the source and available through the app's license information. See `LICENSE`, `src/licenses.rs`, and the applicable bundled-component directories for details.
 
