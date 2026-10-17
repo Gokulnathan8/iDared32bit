@@ -204,13 +204,8 @@ final class PickerHostingController: UIHostingController<PickerView> {
 
 // MARK: - Layout
 
-/// When the app became free. The Upgrade button only shows after this, so
-/// it's hidden while this is nil.
-let freeSince: Date? = nil
-
 /// The logo's background colour, so it blends in.
 let headerBlue = Color(red: 0, green: 77 / 255, blue: 215 / 255)
-let logoYellow = Color(red: 253 / 255, green: 224 / 255, blue: 22 / 255)
 let labelFontSize: CGFloat = 14
 let labelLineHeight: CGFloat = 17
 
@@ -429,15 +424,6 @@ struct Header: View {
                     height: content.height - 4
                 ))
             HStack(spacing: 8) {
-                if let freeSince, Date() >= freeSince {
-                    HeaderButton(
-                        title: "Upgrade",
-                        symbol: "crown.fill",
-                        color: logoYellow,
-                        fill: Color(red: 0.08, green: 0.12, blue: 0.35),
-                        action: {}
-                    )
-                }
                 HeaderButton(
                     title: "About",
                     symbol: "info",
