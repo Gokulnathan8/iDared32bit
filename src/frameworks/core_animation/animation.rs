@@ -255,6 +255,17 @@ impl State {
                     );
                     presentation.position = from_value + by_value * interpolation_amount;
                 }
+                "transform.rotation.z" => {
+                    let current = presentation.affine_transform;
+                    let current_angle = current.b.atan2(current.a);
+                    let from_value = id_as_option(from_value).map(|obj| msg![env; obj floatValue]);
+                    let to_value = id_as_option(to_value).map(|obj| msg![env; obj floatValue]);
+                    let by_value = id_as_option(by_value).map(|obj| msg![env; obj floatValue]);
+                    let (from_value, by_value) =
+                        get_from_and_by_values(Some(current_angle), from_value, to_value, by_value);
+                    let angle = from_value + by_value * interpolation_amount;
+                    presentation.affine_transform = current.rotate(angle - current_angle);
+                }
                 _ => panic!("Attempted to animate on key {}", key_path),
             }
         }
