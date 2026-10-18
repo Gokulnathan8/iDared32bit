@@ -80,7 +80,7 @@ The app project builds everything it needs itself. The Rust code is built by the
 
 The project also has a Debug-Simulator configuration for the iOS Simulator. For a release, use Product › Archive, then distribute the archive from the Organizer window.
 
-The bundled guest libraries (`dylibs`) are embedded in the app, so there is nothing to copy. Apps to run go in the `touchHLE_apps` folder, which the app shows in the Files app.
+The bundled guest libraries (`dylibs`) are embedded in the app, so there is nothing to copy. Games to run go in the `Games` folder, which the app shows in the Files app.
 
 ### Desktop (macOS, Windows, Linux)
 
