@@ -382,7 +382,7 @@ struct PickerView: View {
             .sheet(isPresented: $model.showingQuickOptions) {
                 QuickOptionsView(model: model)
             }
-            .alert("Couldn't Start the Game", isPresented: $model.showingStartError) {
+            .alert("The Game Stopped", isPresented: $model.showingStartError) {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(model.input.startError ?? "")

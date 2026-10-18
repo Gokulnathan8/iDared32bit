@@ -2067,9 +2067,9 @@ pub fn open_url(env: &mut Environment, url: &str) -> Result<(), String> {
     env.on_parent_stack_in_coroutine(|_, _| sdl2::url::open_url(url).map_err(|e| e.to_string()))
 }
 
-/// Why the last game couldn't start, for the iOS app picker to show. A
-/// messagebox can't be used there: it's never shown, and the app hangs.
-#[cfg(target_os = "ios")]
+/// Why the last game couldn't start or crashed, for the iOS app picker to
+/// show. A messagebox can't be used there before the game has a window: it's
+/// never shown, and the app hangs.
 pub static START_ERROR: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);
 
 /// Set when the user picks "Return to App Picker" in the error messagebox.
@@ -2081,6 +2081,14 @@ pub static RETURN_TO_APP_PICKER_AFTER_ERROR: std::sync::atomic::AtomicBool =
 /// The window argument allows for passing in the parent window for the
 /// messagebox, which is not required but should be done if possible.
 pub fn show_error_messagebox(window: Option<&Window>, error_message: &str) {
+    // On iOS, the app picker shows it instead, with an OK button, so the
+    // game always returns there.
+    if cfg!(target_os = "ios") {
+        let message = format!("iDared 32bit crashed: {error_message}");
+        *START_ERROR.lock().unwrap() = Some(message);
+        RETURN_TO_APP_PICKER_AFTER_ERROR.store(true, std::sync::atomic::Ordering::Relaxed);
+        return;
+    }
     assert!(window.is_none_or(|win| win.on_main_stack));
     use sdl2::messagebox;
     let mbox = [

@@ -7,6 +7,7 @@ iDared 32bit is based on [touchHLE](https://touchhle.org/). This file lists only
 Usability:
 
 - Fixed a black screen on iPhone and iPad when a game couldn't start. The app picker now shows why, and other games can still be started afterwards.
+- On iPhone and iPad, when a game crashes, iDared 32bit goes back to the app picker and shows what went wrong, with an OK button.
 - The app picker shows games' higher-resolution icons when they include them, so they look sharper on modern screens. Games with only a low-resolution icon have it scaled up more smoothly.
 - Game icons are shown as they are, without an added glossy shine.
 - On macOS, Windows, Android and Linux, the folders and files have the same simpler names as on iPhone and iPad: `Games`, `Saves`, `Options.txt`, `Wallpaper.png` and `Log.txt`. Existing ones are moved to the new names automatically. The Windows download includes an empty `Games` folder.
