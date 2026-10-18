@@ -51,6 +51,13 @@ pub const CLASSES: ClassExports = objc_classes! {
     autorelease(env, new)
 }
 
++ (id)URLWithString:(id)url // NSString*
+      relativeToURL:(id)base_url { // NSURL*
+    let new: id = msg![env; this alloc];
+    let new: id = msg![env; new initWithString:url relativeToURL:base_url];
+    autorelease(env, new)
+}
+
 + (id)fileURLWithPath:(id)path { // NSString*
     let new: id = msg![env; this alloc];
     let new: id = msg![env; new initFileURLWithPath:path];
@@ -102,6 +109,47 @@ pub const CLASSES: ClassExports = objc_classes! {
     assert!(!to_rust_string(env, url).starts_with("file:")); // TODO
     let url: id = msg![env; url copy];
     *env.objc.borrow_mut(this) = NSURLHostObject::OtherURL { ns_string: url };
+    this
+}
+
+- (id)initWithString:(id)url // NSString*
+       relativeToURL:(id)base_url { // NSURL*
+    if url == nil || base_url == nil {
+        return msg![env; this initWithString:url];
+    }
+
+    // TODO: Keep the relative part and the base separate, for -baseURL,
+    // -relativeString and -description. This stores the resolved URL.
+    let base = match *env.objc.borrow(base_url) {
+        NSURLHostObject::FileURL { ns_string, ref working_directory } => {
+            let working_directory = working_directory.as_str().to_string();
+            let path = to_rust_string(env, ns_string);
+            if path.starts_with('/') {
+                format!("file://{}", path)
+            } else {
+                let path = path.trim_start_matches("./");
+                format!("file://{}/{}", working_directory, path)
+            }
+        },
+        NSURLHostObject::OtherURL { ns_string } => {
+            to_rust_string(env, ns_string).to_string()
+        },
+    };
+    let reference = to_rust_string(env, url);
+    let resolved = resolve_url_reference(&base, &reference);
+    let host_object = match resolved.strip_prefix("file://") {
+        Some(path) if !path.contains(['?', '#']) => {
+            let ns_string = from_rust_string(env, path.to_string());
+            NSURLHostObject::FileURL {
+                ns_string,
+                working_directory: env.fs.working_directory().into(),
+            }
+        },
+        _ => NSURLHostObject::OtherURL {
+            ns_string: from_rust_string(env, resolved),
+        },
+    };
+    *env.objc.borrow_mut(this) = host_object;
     this
 }
 
@@ -211,5 +259,164 @@ pub fn to_rust_path(env: &mut Environment, url: id) -> Cow<'static, GuestPath> {
     match to_rust_string(env, path_string) {
         Cow::Borrowed(path) => Cow::Borrowed(path.as_ref()),
         Cow::Owned(path_buf) => Cow::Owned(path_buf.into()),
+    }
+}
+
+/// Splits a URL into its scheme, authority, path, query and fragment, as in
+/// RFC 3986 appendix B.
+#[allow(clippy::type_complexity)]
+fn split_url(url: &str) -> (Option<&str>, Option<&str>, &str, Option<&str>, Option<&str>) {
+    let (rest, fragment) = match url.split_once('#') {
+        Some((rest, fragment)) => (rest, Some(fragment)),
+        None => (url, None),
+    };
+    let (rest, query) = match rest.split_once('?') {
+        Some((rest, query)) => (rest, Some(query)),
+        None => (rest, None),
+    };
+    let (scheme, rest) = match rest.find(':') {
+        Some(i) if i > 0 && !rest[..i].contains('/') => (Some(&rest[..i]), &rest[i + 1..]),
+        _ => (None, rest),
+    };
+    let (authority, path) = match rest.strip_prefix("//") {
+        Some(rest) => {
+            let i = rest.find('/').unwrap_or(rest.len());
+            (Some(&rest[..i]), &rest[i..])
+        }
+        None => (None, rest),
+    };
+    (scheme, authority, path, query, fragment)
+}
+
+/// Removes `.` and `..` segments from a path (RFC 3986 section 5.2.4).
+fn remove_dot_segments(path: &str) -> String {
+    let segments: Vec<&str> = path.split('/').collect();
+    let last = segments.len() - 1;
+    let mut output: Vec<&str> = Vec::new();
+    for (i, &segment) in segments.iter().enumerate() {
+        if segment == "." || segment == ".." {
+            // Never remove the empty segment before a leading slash.
+            if segment == ".."
+                && output
+                    .last()
+                    .is_some_and(|s| !s.is_empty() || output.len() > 1)
+            {
+                output.pop();
+            }
+            if i == last {
+                output.push("");
+            }
+        } else {
+            output.push(segment);
+        }
+    }
+    output.join("/")
+}
+
+/// Resolves a URL reference against a base URL (RFC 3986 section 5.2).
+fn resolve_url_reference(base: &str, reference: &str) -> String {
+    let (b_scheme, b_authority, b_path, b_query, _) = split_url(base);
+    let (r_scheme, r_authority, r_path, r_query, fragment) = split_url(reference);
+    let (scheme, authority, path, query);
+    if r_scheme.is_some() {
+        (scheme, authority) = (r_scheme, r_authority);
+        (path, query) = (remove_dot_segments(r_path), r_query);
+    } else if r_authority.is_some() {
+        (scheme, authority) = (b_scheme, r_authority);
+        (path, query) = (remove_dot_segments(r_path), r_query);
+    } else if r_path.is_empty() {
+        (scheme, authority) = (b_scheme, b_authority);
+        (path, query) = (b_path.to_string(), r_query.or(b_query));
+    } else if r_path.starts_with('/') {
+        (scheme, authority) = (b_scheme, b_authority);
+        (path, query) = (remove_dot_segments(r_path), r_query);
+    } else {
+        let merged = if b_authority.is_some() && b_path.is_empty() {
+            format!("/{}", r_path)
+        } else {
+            let dir_end = b_path.rfind('/').map_or(0, |i| i + 1);
+            format!("{}{}", &b_path[..dir_end], r_path)
+        };
+        (scheme, authority) = (b_scheme, b_authority);
+        (path, query) = (remove_dot_segments(&merged), r_query);
+    }
+
+    let mut result = String::new();
+    if let Some(scheme) = scheme {
+        result.push_str(scheme);
+        result.push(':');
+    }
+    if let Some(authority) = authority {
+        result.push_str("//");
+        result.push_str(authority);
+    }
+    result.push_str(&path);
+    if let Some(query) = query {
+        result.push('?');
+        result.push_str(query);
+    }
+    if let Some(fragment) = fragment {
+        result.push('#');
+        result.push_str(fragment);
+    }
+    result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::resolve_url_reference;
+
+    #[test]
+    fn test_resolve_url_reference() {
+        // The examples from RFC 3986 section 5.4.
+        let base = "http://a/b/c/d;p?q";
+        let examples = [
+            ("g:h", "g:h"),
+            ("g", "http://a/b/c/g"),
+            ("./g", "http://a/b/c/g"),
+            ("g/", "http://a/b/c/g/"),
+            ("/g", "http://a/g"),
+            ("//g", "http://g"),
+            ("?y", "http://a/b/c/d;p?y"),
+            ("g?y", "http://a/b/c/g?y"),
+            ("#s", "http://a/b/c/d;p?q#s"),
+            ("g#s", "http://a/b/c/g#s"),
+            ("g?y#s", "http://a/b/c/g?y#s"),
+            (";x", "http://a/b/c/;x"),
+            ("g;x", "http://a/b/c/g;x"),
+            ("g;x?y#s", "http://a/b/c/g;x?y#s"),
+            ("", "http://a/b/c/d;p?q"),
+            (".", "http://a/b/c/"),
+            ("./", "http://a/b/c/"),
+            ("..", "http://a/b/"),
+            ("../", "http://a/b/"),
+            ("../g", "http://a/b/g"),
+            ("../..", "http://a/"),
+            ("../../", "http://a/"),
+            ("../../g", "http://a/g"),
+            ("../../../g", "http://a/g"),
+            ("../../../../g", "http://a/g"),
+            ("/./g", "http://a/g"),
+            ("/../g", "http://a/g"),
+            ("g.", "http://a/b/c/g."),
+            (".g", "http://a/b/c/.g"),
+            ("g..", "http://a/b/c/g.."),
+            ("..g", "http://a/b/c/..g"),
+            ("./../g", "http://a/b/g"),
+            ("./g/.", "http://a/b/c/g/"),
+            ("g/./h", "http://a/b/c/g/h"),
+            ("g/../h", "http://a/b/c/h"),
+            ("g;x=1/./y", "http://a/b/c/g;x=1/y"),
+            ("g;x=1/../y", "http://a/b/c/y"),
+            ("g?y/./x", "http://a/b/c/g?y/./x"),
+            ("g#s/../x", "http://a/b/c/g#s/../x"),
+        ];
+        for (reference, expected) in examples {
+            assert_eq!(
+                resolve_url_reference(base, reference),
+                expected,
+                "{reference}"
+            );
+        }
     }
 }
