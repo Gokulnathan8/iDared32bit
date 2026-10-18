@@ -47,7 +47,7 @@ There are no binary releases except the App Store app. This fork's GitHub Action
 
 ## Important disclaimers
 
-This project is not affiliated with or endorsed by Apple Inc in any way. iPhone, iOS, iPod, iPod touch and iPad are trademarks of Apple Inc in the United States and other countries.
+This project is not affiliated with or endorsed by Apple Inc. in any way. Apple, iPhone, iPad, and iPod touch are trademarks of Apple Inc., registered in the U.S. and other countries and regions. iOS is a trademark or registered trademark of Cisco in the U.S. and other countries and is used under license by Apple.
 
 Only use iDared 32bit to emulate software you have obtained legally.
 
