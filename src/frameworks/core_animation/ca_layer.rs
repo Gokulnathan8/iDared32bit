@@ -639,6 +639,17 @@ pub const CLASSES: ClassExports = objc_classes! {
     };
 }
 
+- (())removeAllAnimations {
+    log_dbg!("[(CALayer*){:?} removeAllAnimations]", this);
+    let host_obj = env.objc.borrow_mut::<CALayerHostObject>(this);
+    let animations: Vec<id> = host_obj.animations.drain().map(|(_, anim)| anim)
+        .chain(host_obj.anonymous_animations.drain())
+        .collect();
+    for anim in animations {
+        release(env, anim);
+    }
+}
+
 // TODO: more
 
 @end
@@ -651,8 +662,10 @@ pub fn remove_anonymous_animation(env: &mut Environment, layer: id, animation: i
         .borrow_mut::<CALayerHostObject>(layer)
         .anonymous_animations
         .remove(&animation);
-    assert!(removed);
-    release(env, animation);
+    // It may already be gone, e.g. after -removeAllAnimations.
+    if removed {
+        release(env, animation);
+    }
 }
 
 fn transform_for_conversion(env: &mut Environment, this: id, other: id) -> CGAffineTransform {

@@ -257,6 +257,11 @@ impl State {
     }
 
     pub fn update_started_and_finished_animations(self, env: &mut Environment) {
+        // A delegate may remove animations, so keep them alive until done.
+        for (layer, animation, ..) in &self.finished_animations {
+            retain(env, *layer);
+            retain(env, *animation);
+        }
         for animation in self.started_animations {
             let delegate = msg![env; animation delegate];
             if delegate != nil {
@@ -264,9 +269,6 @@ impl State {
             }
         }
 
-        for (layer, ..) in &self.finished_animations {
-            retain(env, *layer);
-        }
         for (layer, animation, finished, removed_on_completion, key) in self.finished_animations {
             let delegate = msg![env; animation delegate];
             if delegate != nil {
@@ -283,6 +285,7 @@ impl State {
             }
 
             release(env, layer);
+            release(env, animation);
         }
     }
 }
