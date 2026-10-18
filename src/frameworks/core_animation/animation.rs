@@ -124,7 +124,13 @@ impl State {
             }
 
             let timing_function: id = msg![env; animation timingFunction];
-            let interpolation_amount: f32 = msg![env; timing_function _solveForInput: progress];
+            let mut interpolation_amount: f32 = msg![env; timing_function _solveForInput: progress];
+            // Each repeat of a cumulative animation carries on from where the
+            // previous one ended.
+            let cumulative: bool = msg![env; animation isCumulative];
+            if cumulative {
+                interpolation_amount += current_repeat.floor();
+            }
 
             if current_repeat >= effective_repeat_count {
                 let removed_on_completion: bool = msg![env; animation isRemovedOnCompletion];
