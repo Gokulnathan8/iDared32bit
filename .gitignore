@@ -1,10 +1,16 @@
 /target
 /touchHLE_sandbox
+/Saves
 /DCIM
 /touchHLE_apps
+/Games/*
+!/Games/README.txt
 touchHLE_log.txt
 touchHLE_log.previous.txt
 touchHLE_wallpaper.*
+/Log.txt
+/Log.previous.txt
+/Wallpaper.*
 
 # Xcode Project (Modern/Deeply Nested)
 **/*.xcodeproj/xcuserdata/

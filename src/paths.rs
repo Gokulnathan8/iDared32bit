@@ -185,65 +185,31 @@ impl std::fmt::Debug for ResourceFile {
 pub const RESOURCES_ARE_EXTERNAL_FILES: bool =
     cfg!(not(any(target_os = "android", target_os = "ios")));
 
-/// Whether the user's files have iDared 32bit's simpler names (`Games`,
-/// `Saves`, ...), which people see in the Files app or Finder, rather than
-/// touchHLE's. Older versions used touchHLE's; see [migrate_old_names]. A
-/// source checkout keeps touchHLE's, as it comes with `touchHLE_apps` and
-/// `touchHLE_options.txt`.
-pub fn simple_names() -> bool {
-    static SIMPLE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *SIMPLE.get_or_init(|| !user_data_base_path().join("Cargo.toml").exists())
-}
-
 /// Name of the directory where the user can put apps if they want them to
 /// appear in the app picker.
 pub fn apps_dir() -> &'static str {
-    if simple_names() {
-        "Games"
-    } else {
-        "touchHLE_apps"
-    }
+    "Games"
 }
 
 /// Name of the file intended for the user's own options.
 pub fn user_options_file() -> &'static str {
-    if simple_names() {
-        "Options.txt"
-    } else {
-        "touchHLE_options.txt"
-    }
+    "Options.txt"
 }
 
 /// Names of files the user can put a wallpaper image (for the app picker) in.
 pub fn wallpaper_files() -> &'static [&'static str] {
-    if simple_names() {
-        &["Wallpaper.png", "Wallpaper.jpg", "Wallpaper.jpeg"]
-    } else {
-        &[
-            "touchHLE_wallpaper.png",
-            "touchHLE_wallpaper.jpg",
-            "touchHLE_wallpaper.jpeg",
-        ]
-    }
+    &["Wallpaper.png", "Wallpaper.jpg", "Wallpaper.jpeg"]
 }
 
 /// Name of the directory where touchHLE will store sandboxed app data, e.g.
 /// the `Documents` directory.
 pub fn sandbox_dir() -> &'static str {
-    if simple_names() {
-        "Saves"
-    } else {
-        "touchHLE_sandbox"
-    }
+    "Saves"
 }
 
 /// Names of the log file and the previous run's log (see [crate::log]).
 pub fn log_files() -> [&'static str; 2] {
-    if simple_names() {
-        ["Log.txt", "Log.previous.txt"]
-    } else {
-        ["touchHLE_log.txt", "touchHLE_log.previous.txt"]
-    }
+    ["Log.txt", "Log.previous.txt"]
 }
 
 /// Name of the directory where touchHLE will store IMG_####.PNG files saved to
@@ -448,25 +414,16 @@ pub fn prepopulate_user_data_dir() {
     }
 
     let apps_dir_readme = apps_dir.join("README.txt");
-    let old_content = include_str!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/touchHLE_apps/README.txt"
-    ));
-    let content = if simple_names() {
-        "Put your .app bundles or .ipa files in this folder, and they'll show \
-         up in the app picker.\n"
-    } else {
-        old_content
-    };
+    let content = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/Games/README.txt"));
     // Older versions created it with touchHLE's text.
     let outdated =
-        simple_names() && std::fs::read_to_string(&apps_dir_readme).is_ok_and(|s| s == old_content);
+        std::fs::read_to_string(&apps_dir_readme).is_ok_and(|s| s == OLD_APPS_DIR_README);
     if !apps_dir_readme.is_file() || outdated {
         create_file(&apps_dir_readme, content);
     }
 
     let user_options = base_path.join(user_options_file());
-    let content = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/touchHLE_options.txt"));
+    let content = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/Options.txt"));
     if !user_options.is_file() {
         create_file(&user_options, content);
     } else if let Ok(old) = std::fs::read_to_string(&user_options) {
@@ -483,6 +440,10 @@ pub fn prepopulate_user_data_dir() {
         create_file(&options_help, crate::options::OPTIONS_HELP);
     }
 }
+
+/// The text older versions created the apps folder's README with.
+const OLD_APPS_DIR_README: &str = "If you put your .app bundles or .ipa files \
+in this directory, they will show up in the touchHLE app picker.\n";
 
 /// The text older versions created the user's options file with.
 const OLD_USER_OPTIONS_TEMPLATE: &str = "\
@@ -503,15 +464,12 @@ const OLD_USER_OPTIONS_TEMPLATE: &str = "\
 # Empty lines are also ignored.
 ";
 
-/// Older versions used touchHLE's names for the user's files (see
-/// [simple_names]). Move anything still under an old name to its new one.
+/// Older versions used touchHLE's names for the user's files. Move anything
+/// still under an old name to its new one.
 /// Nothing is overwritten, so this is safe to run on every launch, and does
 /// nothing once it's done. Call it before anything uses the user's files,
 /// except the log.
 pub fn migrate_old_names() {
-    if !simple_names() {
-        return;
-    }
     let base_path = user_data_base_path();
     let wallpaper_files = wallpaper_files();
     let names = [

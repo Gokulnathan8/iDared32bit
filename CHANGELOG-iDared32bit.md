@@ -9,7 +9,7 @@ Usability:
 - Fixed a black screen on iPhone and iPad when a game couldn't start. The app picker now shows why, and other games can still be started afterwards.
 - The app picker shows games' higher-resolution icons when they include them, so they look sharper on modern screens. Games with only a low-resolution icon have it scaled up more smoothly.
 - Game icons are shown as they are, without an added glossy shine.
-- On macOS, Windows, Android and Linux, the folders and files have the same simpler names as on iPhone and iPad: `Games`, `Saves`, `Options.txt`, `Wallpaper.png` and `Log.txt`. Existing ones are moved to the new names automatically (builds run from a source checkout keep touchHLE's names). The Windows download includes an empty `Games` folder.
+- On macOS, Windows, Android and Linux, the folders and files have the same simpler names as on iPhone and iPad: `Games`, `Saves`, `Options.txt`, `Wallpaper.png` and `Log.txt`. Existing ones are moved to the new names automatically. The Windows download includes an empty `Games` folder.
 - The macOS app is called iDared 32bit, and keeps its data in an iDared 32bit folder in Application Support. The old touchHLE folder there is moved automatically.
 - The app picker shows the status bar (the time and battery) again.
 
