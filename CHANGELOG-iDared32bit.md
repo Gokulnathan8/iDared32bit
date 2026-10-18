@@ -8,6 +8,10 @@ Usability:
 
 - Fixed a black screen on iPhone and iPad when a game couldn't start. The app picker now shows why, and other games can still be started afterwards.
 
+Compatibility:
+
+- Fixed a crash in some games that show web pages.
+
 ## v1.4.2 (2026-10-14)
 
 Usability:
