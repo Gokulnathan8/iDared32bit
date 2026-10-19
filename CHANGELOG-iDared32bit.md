@@ -7,6 +7,7 @@ iDared 32bit is based on [touchHLE](https://touchhle.org/). This file lists only
 Usability:
 
 - When a game opens a web page, it now opens on iPhone and iPad too, and iDared 32bit returns to the app picker instead of closing.
+- Toolbars in games look as they did on iPhone OS 3, with glossy bars and buttons, instead of plain white buttons.
 
 Compatibility:
 

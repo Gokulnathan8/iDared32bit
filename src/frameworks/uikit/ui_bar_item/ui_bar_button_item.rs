@@ -56,9 +56,11 @@ impl Default for UIBarButtonItemHostObject {
 }
 
 fn make_label(env: &mut crate::Environment, title: id) -> id {
-    let font: id = msg_class![env; UIFont systemFontOfSize:17_f32];
-    let title_color: id = msg_class![env; UIColor blackColor];
-    let item_bg_color: id = msg_class![env; UIColor whiteColor];
+    // As on iPhone OS 3: white bold text, drawn over the button background
+    // that UIToolbar draws.
+    let font: id = msg_class![env; UIFont boldSystemFontOfSize:12_f32];
+    let title_color: id = msg_class![env; UIColor whiteColor];
+    let item_bg_color: id = msg_class![env; UIColor clearColor];
     let init_frame = CGRect {
         origin: CGPoint { x: 0.0, y: 0.0 },
         size: CGSize {
@@ -73,8 +75,6 @@ fn make_label(env: &mut crate::Environment, title: id) -> id {
     () = msg![env; label setTextColor:title_color];
     () = msg![env; label setFont:font];
     () = msg![env; label setBackgroundColor:item_bg_color];
-    let layer: id = msg![env; label layer];
-    () = msg![env; layer setCornerRadius:(10.0 as CGFloat)];
     label
 }
 
@@ -266,8 +266,9 @@ pub const CLASSES: ClassExports = objc_classes! {
     let custom_view = host.custom_view;
     if label != nil {
         let label_size: CGSize = msg![env; label sizeThatFits:size];
+        // 10pt either side of the title, as on iPhone OS 3.
         CGSize {
-            width: label_size.width + 16.0,
+            width: label_size.width + 20.0,
             height: size.height,
         }
     } else if custom_view != nil {
