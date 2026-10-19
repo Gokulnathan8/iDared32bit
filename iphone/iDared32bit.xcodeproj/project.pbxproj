@@ -35,7 +35,7 @@
 
 /* Begin PBXFileReference section */
 		4F5818482F84076100018CE3 /* libiDared32bit_static.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libiDared32bit_static.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		4FE48DA72F8C117700C368B5 /* DefaultOptions.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = DefaultOptions.txt; path = DefaultOptions.txt; sourceTree = SOURCE_ROOT; };
+		4FE48DA72F8C117700C368B5 /* DefaultOptions.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = DefaultOptions.txt; sourceTree = SOURCE_ROOT; };
 		E36F8F702DD1AB1500950EF2 /* touchHLE.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = touchHLE.xcodeproj; path = ../touchHLE.xcodeproj; sourceTree = "<absolute>"; };
 		E36F8FBA2DD1B0D000950EF2 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
 		E36F8FBB2DD1B0D000950EF2 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
@@ -53,7 +53,7 @@
 		E36F8FD42DD1B14F00950EF2 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		E36F8FD62DD1B16400950EF2 /* libc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libc++.tbd"; path = "usr/lib/libc++.tbd"; sourceTree = SDKROOT; };
 		E36F8FD82DD1B17400950EF2 /* libiconv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libiconv.tbd; path = usr/lib/libiconv.tbd; sourceTree = SDKROOT; };
-		E36F91AB2DD1BCF300950EF2 /* Fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Fonts; path = Fonts; sourceTree = SOURCE_ROOT; };
+		E36F91AB2DD1BCF300950EF2 /* Fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Fonts; sourceTree = SOURCE_ROOT; };
 		E3A46EC32DD1A44100619FED /* iDared 32bit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "iDared 32bit.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E3A46EDD2DD1A79A00619FED /* SDL.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SDL.xcodeproj; path = ../vendor/SDL/Xcode/SDL/SDL.xcodeproj; sourceTree = "<absolute>"; };
 		E3C0F1600000000000000001 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = SOURCE_ROOT; };
