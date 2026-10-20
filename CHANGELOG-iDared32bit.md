@@ -7,6 +7,7 @@ iDared 32bit is based on [touchHLE](https://touchhle.org/). This file lists only
 Compatibility:
 
 - Fixed a crash in some games when loading their text.
+- Fixed missing music in some games that use 8-bit sound files.
 
 ## v1.4.3 (2026-10-18)
 

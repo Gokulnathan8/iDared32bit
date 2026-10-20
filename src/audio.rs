@@ -130,6 +130,60 @@ fn wav_to_pcm16<R: std::io::Read>(
     })
 }
 
+/// Symphonia can't read 8-bit linear PCM in CAF files, so convert it to
+/// 16-bit here. CAF's integer samples are always signed.
+fn caf_pcm8_to_pcm16(bytes: &[u8]) -> Option<symphonia_formats::SymphoniaDecodedToPcm> {
+    let u32_at = |at: usize| Some(u32::from_be_bytes(bytes.get(at..at + 4)?.try_into().ok()?));
+    if bytes.get(..4)? != b"caff" {
+        return None;
+    }
+    let mut desc = None;
+    let mut pos = 8;
+    while pos + 12 <= bytes.len() {
+        let chunk_type = &bytes[pos..pos + 4];
+        let size = i64::from_be_bytes(bytes[pos + 4..pos + 12].try_into().unwrap());
+        let start = pos + 12;
+        // A size of -1 means the chunk (always data) runs to the end.
+        let end = if size < 0 {
+            bytes.len()
+        } else {
+            start.checked_add(size.try_into().ok()?)?.min(bytes.len())
+        };
+        match chunk_type {
+            b"desc" => {
+                let rate = f64::from_bits(u64::from_be_bytes(
+                    bytes.get(start..start + 8)?.try_into().ok()?,
+                ));
+                let format_id = bytes.get(start + 8..start + 12)?;
+                let is_float = u32_at(start + 12)? & 1 != 0;
+                let channels = u32_at(start + 24)?;
+                let bits = u32_at(start + 28)?;
+                if format_id != b"lpcm" || is_float || bits != 8 || channels == 0 {
+                    return None;
+                }
+                desc = Some((rate, channels));
+            }
+            b"data" => {
+                let (rate, channels) = desc?;
+                // Skip the edit count.
+                let samples = bytes.get(start + 4..end)?;
+                return Some(symphonia_formats::SymphoniaDecodedToPcm {
+                    bytes: samples
+                        .iter()
+                        .flat_map(|&s| (i16::from(s as i8) << 8).to_le_bytes())
+                        .collect(),
+                    sample_rate: rate as u32,
+                    channels,
+                    compressed_format: None,
+                });
+            }
+            _ => (),
+        }
+        pos = end;
+    }
+    None
+}
+
 impl AudioFile {
     pub fn open_for_reading<P: AsRef<GuestPath>>(
         path: P,
@@ -178,6 +232,8 @@ impl AudioFile {
         // are immediately decoding the entire file to PCM and acting as if
         // it's a PCM file, simply because because this is easier. Full MP3
         // support would require a lot of changes in Audio Toolbox.
+        } else if let Some(pcm) = caf_pcm8_to_pcm16(&bytes) {
+            Ok(AudioFileInner::Symphonia(pcm))
         } else if let Ok(pcm) = symphonia_formats::decode_symphonia_to_pcm(Cursor::new(bytes)) {
             Ok(AudioFileInner::Symphonia(pcm))
         } else {
