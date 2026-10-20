@@ -158,19 +158,25 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (bool)openURL:(id)url { // NSURL
+    // Already quitting: Super Monkey Ball keeps opening the URL every frame!
+    if env.return_to_app_picker {
+        return true;
+    }
     let ns_string = msg![env; url absoluteString];
     let url_string = ns_string::to_rust_string(env, ns_string);
     if let Err(e) = crate::window::open_url(env, &url_string) {
-        echo!("App opened URL {:?} unsuccessfully ({}), exiting.", url_string, e);
+        echo!("App opened URL {:?} unsuccessfully ({}), quitting.", url_string, e);
     } else {
-        echo!("App opened URL {:?}, exiting.", url_string);
+        echo!("App opened URL {:?}, quitting.", url_string);
     }
 
     // iPhone OS doesn't really do multitasking, so the app expects to close
-    // when a URL is opened, e.g. Super Monkey Ball keeps opening the URL every
-    // frame! Super Monkey Ball also doesn't check whether opening failed, so
-    // it's probably best to always exit.
-    exit(env);
+    // when a URL is opened. Super Monkey Ball doesn't check whether opening
+    // failed, so it's probably best to always quit. Return to the app picker
+    // rather than exiting: on iOS the URL is opened later, from the run loop,
+    // so exiting now would stop it from opening at all.
+    notify_will_terminate(env);
+    env.return_to_app_picker = true;
     true
 }
 
