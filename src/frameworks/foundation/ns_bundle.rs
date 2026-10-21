@@ -167,7 +167,24 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (id)pathForResource:(id)name // NSString*
                ofType:(id)extension // NSString*
           inDirectory:(id)directory { // NSString*
-    assert!(name != nil); // TODO
+    let is_empty = |env: &mut Environment, s: id| {
+        s == nil || ns_string::to_rust_string(env, s).is_empty()
+    };
+    // As in Core Foundation: no name means the first file of the type, and
+    // no type means any type.
+    if is_empty(env, name) {
+        let paths: id = msg![env; this pathsForResourcesOfType:extension inDirectory:directory];
+        let count: NSUInteger = msg![env; paths count];
+        let mut first: Option<(String, id)> = None;
+        for i in 0..count {
+            let path: id = msg![env; paths objectAtIndex:i];
+            let path_str = ns_string::to_rust_string(env, path).into_owned();
+            if first.as_ref().is_none_or(|(f, _)| path_str < *f) {
+                first = Some((path_str, path));
+            }
+        }
+        return first.map_or(nil, |(_, path)| path);
+    }
 
     // TODO: cache result of lookups
 
