@@ -134,6 +134,7 @@ typedef enum {
                                                (NSStringCompareOptions)options
                                              range:(NSRange)range;
 - (BOOL)isEqualToString:(NSString *)other;
+- (const char *)UTF8String;
 @end
 @interface NSMutableString : NSString
 - (void)deleteCharactersInRange:(NSRange)range;
@@ -197,6 +198,41 @@ typedef double NSTimeInterval;
 @end
 
 @interface NSURL : NSObject
++ (NSURL *)fileURLWithPath:(NSString *)path;
+- (NSString *)path;
+@end
+
+NSString *NSHomeDirectory(void);
+extern NSString *const NSFileType;
+extern NSString *const NSFileTypeDirectory;
+extern NSString *const NSFileTypeRegular;
+
+@interface NSEnumerator : NSObject
+- (id)nextObject;
+- (NSArray *)allObjects;
+@end
+
+@interface NSDirectoryEnumerator : NSEnumerator
+- (NSDictionary *)fileAttributes;
+- (NSDictionary *)directoryAttributes;
+- (void)skipDescendents;
+- (NSUInteger)level;
+@end
+
+typedef enum {
+  NSDirectoryEnumerationSkipsSubdirectoryDescendants = 1,
+  NSDirectoryEnumerationSkipsPackageDescendants = 2,
+  NSDirectoryEnumerationSkipsHiddenFiles = 4,
+} NSDirectoryEnumerationOptions;
+
+@interface NSFileManager : NSObject
++ (NSFileManager *)defaultManager;
+- (NSDirectoryEnumerator *)enumeratorAtPath:(NSString *)path;
+- (NSDirectoryEnumerator *)enumeratorAtURL:(NSURL *)url
+                includingPropertiesForKeys:(NSArray *)keys
+                                   options:
+                                       (NSDirectoryEnumerationOptions)options
+                              errorHandler:(id)handler;
 @end
 
 @interface NSData : NSObject

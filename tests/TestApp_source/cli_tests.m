@@ -6992,6 +6992,102 @@ int test_KVO_manual_notifications() {
   return res;
 }
 
+int test_NSDirectoryEnumerator() {
+  NSAutoreleasePool *pool = [NSAutoreleasePool new];
+  NSFileManager *fm = [NSFileManager defaultManager];
+  NSString *bundle = [NSString stringWithUTF8String:path_test_app()];
+  NSString *testApp = [NSString stringWithUTF8String:"TestApp.app"];
+  int res = 0;
+
+  // The bundle's files, in name order, all at level 1.
+  NSDirectoryEnumerator *e = [fm enumeratorAtPath:bundle];
+  if ([[[e directoryAttributes] objectForKey:NSFileType]
+          isEqualToString:NSFileTypeDirectory] == NO) {
+    res = -1;
+    goto out;
+  }
+  char last[256] = "";
+  int count = 0;
+  BOOL foundPlist = NO;
+  for (NSString *name = [e nextObject]; name; name = [e nextObject]) {
+    const char *c_name = [name UTF8String];
+    if (strcmp(last, c_name) >= 0 || [e level] != 1) {
+      res = -2;
+      goto out;
+    }
+    strncpy(last, c_name, sizeof(last) - 1);
+    if (!strcmp(c_name, "Info.plist")) {
+      foundPlist = [[[e fileAttributes] objectForKey:NSFileType]
+          isEqualToString:NSFileTypeRegular];
+    }
+    count++;
+  }
+  if (!foundPlist || count < 2 ||
+      [[[fm enumeratorAtPath:bundle] allObjects] count] != count) {
+    res = -3;
+    goto out;
+  }
+
+  // Skipping the bundle when walking the app's home directory.
+  e = [fm enumeratorAtPath:NSHomeDirectory()];
+  BOOL foundBundle = NO;
+  for (NSString *name = [e nextObject]; name; name = [e nextObject]) {
+    if ([name isEqualToString:testApp]) {
+      foundBundle = YES;
+      if ([e level] != 1) {
+        res = -4;
+        goto out;
+      }
+      [e skipDescendents];
+    } else if (!strncmp([name UTF8String], "TestApp.app/", 12)) {
+      res = -5;
+      goto out;
+    }
+  }
+  if (!foundBundle) {
+    res = -6;
+    goto out;
+  }
+
+  // Without skipping, the bundle's files come next, at level 2.
+  e = [fm enumeratorAtPath:NSHomeDirectory()];
+  BOOL foundInBundle = NO;
+  for (NSString *name = [e nextObject]; name; name = [e nextObject]) {
+    if (!strcmp([name UTF8String], "TestApp.app/Info.plist")) {
+      foundInBundle = [e level] == 2;
+    }
+  }
+  if (!foundInBundle) {
+    res = -7;
+    goto out;
+  }
+
+  // URLs, only the top level.
+  e = [fm enumeratorAtURL:[NSURL fileURLWithPath:NSHomeDirectory()]
+      includingPropertiesForKeys:nil
+                         options:
+                             NSDirectoryEnumerationSkipsSubdirectoryDescendants
+                    errorHandler:nil];
+  foundBundle = NO;
+  for (NSURL *url = [e nextObject]; url; url = [e nextObject]) {
+    const char *path = [[url path] UTF8String];
+    const char *slash = strrchr(path, '/');
+    if (slash && !strcmp(slash, "/TestApp.app")) {
+      foundBundle = YES;
+    } else if (strstr(path, "/TestApp.app/")) {
+      res = -8;
+      goto out;
+    }
+  }
+  if (!foundBundle) {
+    res = -9;
+  }
+
+out:
+  [pool drain];
+  return res;
+}
+
 int test_malloc_zone_basic() {
   malloc_zone_t *zone = malloc_create_zone(0, 0);
   unsigned char *p = malloc_zone_malloc(zone, 128);
@@ -7338,6 +7434,7 @@ struct {
     FUNC_DEF(test_NSNotificationCenter_addObserver_nilName_removeObserver),
     FUNC_DEF(test_NSMutableArray_removeObjectsInArray_otherArray),
     FUNC_DEF(test_KVO_manual_notifications),
+    FUNC_DEF(test_NSDirectoryEnumerator),
     FUNC_DEF(test_malloc_zone_basic),
     FUNC_DEF(test_malloc_zone_struct_dispatch),
     FUNC_DEF(test_fcvt),

@@ -16,6 +16,7 @@ Compatibility:
 - Fixed a crash on iPhone and iPad in some games after playing for a while.
 - Alerts in games are now shown, and their buttons work, fixing a crash in some games.
 - Fixed a crash in some games that watch for changes to their settings.
+- Fixed some games that look through folders of files, such as their saves.
 
 ## v1.4.3 (2026-10-18)
 
