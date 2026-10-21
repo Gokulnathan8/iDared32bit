@@ -4,9 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 //! `CGPath`
+use super::cg_affine_transform::CGAffineTransform;
 use super::CGPoint;
 use crate::dyld::{export_c_func, FunctionExports};
-use crate::frameworks::core_foundation::CFTypeRef;
+use crate::frameworks::core_foundation::{CFRelease, CFRetain, CFTypeRef};
+use crate::mem::{ConstPtr, GuestUSize};
 use crate::objc::{objc_classes, ClassExports, HostObject};
 use crate::Environment;
 
@@ -52,4 +54,89 @@ pub fn CGPathCreateMutable(env: &mut Environment) -> CGMutablePathRef {
     env.objc.alloc_object(class, host_obj, &mut env.mem)
 }
 
-pub const FUNCTIONS: FunctionExports = &[export_c_func!(CGPathCreateMutable())];
+pub fn CGPathRetain(env: &mut Environment, path: CGMutablePathRef) -> CGMutablePathRef {
+    if !path.is_null() {
+        CFRetain(env, path)
+    } else {
+        path
+    }
+}
+pub fn CGPathRelease(env: &mut Environment, path: CGMutablePathRef) {
+    if !path.is_null() {
+        CFRelease(env, path);
+    }
+}
+
+/// Apply the optional transform that CGPath's adding functions take.
+fn transformed(env: &Environment, m: ConstPtr<CGAffineTransform>, point: CGPoint) -> CGPoint {
+    if m.is_null() {
+        point
+    } else {
+        env.mem.read(m).apply_to_point(point)
+    }
+}
+
+fn add_element(
+    env: &mut Environment,
+    path: CGMutablePathRef,
+    type_: CGPathElementType,
+    point: CGPoint,
+) {
+    env.objc
+        .borrow_mut::<CGMutablePathHostObject>(path)
+        .path_elements
+        .push(CGPathElement {
+            points: vec![point],
+            r#type: type_,
+        });
+}
+
+pub fn CGPathMoveToPoint(
+    env: &mut Environment,
+    path: CGMutablePathRef,
+    m: ConstPtr<CGAffineTransform>,
+    x: f32,
+    y: f32,
+) {
+    let point = transformed(env, m, CGPoint { x, y });
+    add_element(env, path, kCGPathElementMoveToPoint, point);
+}
+
+pub fn CGPathAddLineToPoint(
+    env: &mut Environment,
+    path: CGMutablePathRef,
+    m: ConstPtr<CGAffineTransform>,
+    x: f32,
+    y: f32,
+) {
+    let point = transformed(env, m, CGPoint { x, y });
+    add_element(env, path, kCGPathElementAddLineToPoint, point);
+}
+
+/// Like Apple's: a move to the first point, then lines to the others.
+pub fn CGPathAddLines(
+    env: &mut Environment,
+    path: CGMutablePathRef,
+    m: ConstPtr<CGAffineTransform>,
+    points: ConstPtr<CGPoint>,
+    count: GuestUSize,
+) {
+    for i in 0..count {
+        let point = transformed(env, m, env.mem.read(points + i));
+        let type_ = if i == 0 {
+            kCGPathElementMoveToPoint
+        } else {
+            kCGPathElementAddLineToPoint
+        };
+        add_element(env, path, type_, point);
+    }
+}
+
+pub const FUNCTIONS: FunctionExports = &[
+    export_c_func!(CGPathCreateMutable()),
+    export_c_func!(CGPathRetain(_)),
+    export_c_func!(CGPathRelease(_)),
+    export_c_func!(CGPathMoveToPoint(_, _, _, _)),
+    export_c_func!(CGPathAddLineToPoint(_, _, _, _)),
+    export_c_func!(CGPathAddLines(_, _, _, _)),
+];
