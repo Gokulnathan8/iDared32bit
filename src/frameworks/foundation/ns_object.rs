@@ -185,10 +185,12 @@ pub const CLASSES: ClassExports = objc_classes! {
 
     // TODO: If value is nil, the target ivar/method argument type must be
     // checked. If it's non-object type, invoke setNilValueForKey:
-    assert!(value != nil);
-
-    let value_class = msg![env; value class];
-    let ns_value_class = env.objc.get_known_class("NSValue", &mut env.mem);
+    // Object properties and setValue:forUndefinedKey: take nil as it is.
+    let is_ns_value = value != nil && {
+        let value_class = msg![env; value class];
+        let ns_value_class = env.objc.get_known_class("NSValue", &mut env.mem);
+        env.objc.class_is_subclass_of(value_class, ns_value_class)
+    };
 
     // Look for the first accessor named set<Key>: or _set<Key>, in that order.
     // If found, invoke it with the input value (or unwrapped value, as needed)
@@ -196,7 +198,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     if let Some(sel) = env.objc.lookup_selector(&format!("set{camel_case_key_string}:")).filter(|&sel| env.objc.class_has_method(class, sel))
         .or_else(|| env.objc.lookup_selector(&format!("_set{camel_case_key_string}:"))).filter(|&sel| env.objc.class_has_method(class, sel)
     ) {
-        if env.objc.class_is_subclass_of(value_class, ns_value_class) {
+        if is_ns_value {
             // If value is a NSValue, it must be unwrapped
             // Find the selector's first (and only) argument type:
             let types = env.objc.get_class_method(class, sel).types.clone();
@@ -272,7 +274,7 @@ pub const CLASSES: ClassExports = objc_classes! {
             .or_else(|| env.objc.object_lookup_ivar(&env.mem, this, &format!("{key_string}")))
             .or_else(|| env.objc.object_lookup_ivar(&env.mem, this, &format!("is{camel_case_key_string}"))
         ) {
-            if env.objc.class_is_subclass_of(value_class, ns_value_class) {
+            if is_ns_value {
                 // If value is a NSValue, it must be unwrapped
                 match ivar_type.chars().next().unwrap() {
                     TYPE_BOOL => {
