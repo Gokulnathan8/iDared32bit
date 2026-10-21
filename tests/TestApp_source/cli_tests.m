@@ -7125,6 +7125,20 @@ int test_methodForSelector() {
   return res;
 }
 
+int test_contentsOfFile_nil() {
+  if ([NSArray arrayWithContentsOfFile:nil] ||
+      [NSMutableArray arrayWithContentsOfFile:nil] ||
+      [NSDictionary dictionaryWithContentsOfFile:nil] ||
+      [NSMutableDictionary dictionaryWithContentsOfFile:nil])
+    return -1;
+  if ([NSArray arrayWithContentsOfURL:nil] ||
+      [NSMutableArray arrayWithContentsOfURL:nil] ||
+      [NSDictionary dictionaryWithContentsOfURL:nil] ||
+      [NSMutableDictionary dictionaryWithContentsOfURL:nil])
+    return -2;
+  return 0;
+}
+
 int test_malloc_zone_basic() {
   malloc_zone_t *zone = malloc_create_zone(0, 0);
   unsigned char *p = malloc_zone_malloc(zone, 128);
@@ -7473,6 +7487,7 @@ struct {
     FUNC_DEF(test_KVO_manual_notifications),
     FUNC_DEF(test_NSDirectoryEnumerator),
     FUNC_DEF(test_methodForSelector),
+    FUNC_DEF(test_contentsOfFile_nil),
     FUNC_DEF(test_malloc_zone_basic),
     FUNC_DEF(test_malloc_zone_struct_dispatch),
     FUNC_DEF(test_fcvt),

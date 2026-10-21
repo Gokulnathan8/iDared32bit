@@ -108,12 +108,23 @@ void (*method_getImplementation(Method m))(void);
 - (void)removeObjectsInArray:(NSArray *)otherArray;
 @end
 
+@class NSURL;
+@interface NSArray (NSArrayCreation)
++ (id)arrayWithContentsOfFile:(id)path;
++ (id)arrayWithContentsOfURL:(NSURL *)url;
+@end
+
 @interface NSDictionary<KeyType, ObjectType> : NSObject
 + (instancetype)dictionaryWithObjects:(NSArray<ObjectType> *)objects
                               forKeys:(NSArray<KeyType> *)keys;
 - (NSUInteger)count;
 - (ObjectType)objectForKey:(KeyType)aKey;
 - (BOOL)isEqualToDictionary:(NSDictionary *)otherDictionary;
++ (id)dictionaryWithContentsOfFile:(id)path;
++ (id)dictionaryWithContentsOfURL:(NSURL *)url;
+@end
+
+@interface NSMutableDictionary<KeyType, ObjectType> : NSDictionary
 @end
 
 @interface NSSet<ObjectType> : NSObject
