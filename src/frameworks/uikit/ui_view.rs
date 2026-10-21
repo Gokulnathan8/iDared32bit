@@ -482,6 +482,18 @@ pub const CLASSES: ClassExports = objc_classes! {
     env.objc.borrow::<UIViewHostObject>(this).superview
 }
 
+// A view counts as a descendant of itself, as in UIKit.
+- (bool)isDescendantOfView:(id)view {
+    let mut current = this;
+    while current != nil {
+        if current == view {
+            return true;
+        }
+        current = env.objc.borrow::<UIViewHostObject>(current).superview;
+    }
+    false
+}
+
 - (id)window {
     // Looks up window in the superview hierarchy
     // TODO: cache the result somehow?

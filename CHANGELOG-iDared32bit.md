@@ -17,6 +17,7 @@ Compatibility:
 - Alerts in games are now shown, and their buttons work, fixing a crash in some games.
 - Fixed a crash in some games that watch for changes to their settings.
 - Fixed some games that look through folders of files, such as their saves.
+- Various small fixes.
 
 ## v1.4.3 (2026-10-18)
 
