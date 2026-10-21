@@ -57,6 +57,7 @@ pub mod ns_thread;
 pub mod ns_time_zone;
 pub mod ns_timer;
 pub mod ns_url;
+pub mod ns_url_cache;
 pub mod ns_url_connection;
 pub mod ns_url_request;
 pub mod ns_user_defaults;
@@ -105,6 +106,7 @@ pub const DYLIB: crate::dyld::HostDylib = crate::dyld::HostDylib {
         ns_timer::CLASSES,
         ns_time_zone::CLASSES,
         ns_url::CLASSES,
+        ns_url_cache::CLASSES,
         ns_url_connection::CLASSES,
         ns_url_request::CLASSES,
         ns_user_defaults::CLASSES,
@@ -141,6 +143,7 @@ pub struct State {
     ns_string: ns_string::State,
     ns_thread: ns_thread::State,
     ns_time_zone: ns_time_zone::State,
+    ns_url_cache: ns_url_cache::State,
     ns_user_defaults: ns_user_defaults::State,
 }
 
