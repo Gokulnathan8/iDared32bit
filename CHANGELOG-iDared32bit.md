@@ -12,6 +12,7 @@ Usability:
 - The app picker's Quick Options button is now Settings: the same game options, plus a Theme Options page.
 - Theme Options can hide the logo in the app picker's header, showing the name instead with a shorter header.
 - Theme Options can also hide the names under the games' icons.
+- On iPhone and iPad, a wallpaper for the app picker can be chosen from Photos, in Theme Options.
 
 Compatibility:
 

@@ -7,6 +7,7 @@
 // The layout matches the picker drawn by src/environment/app_picker.rs.
 
 import CoreImage
+import PhotosUI
 import SwiftUI
 import UIKit
 
@@ -30,6 +31,9 @@ struct PickerInput: Decodable {
     let apps: [App]
     let error: String?
     let wallpaperPath: String?
+    /// Where the wallpaper goes, and the names Rust looks for there.
+    let wallpaperFolder: String
+    let wallpaperFiles: [String]
     let branding: String
     let shortVersionText: String
     let copyright: String
@@ -159,7 +163,7 @@ private func addQuestionMark(_ icon: UIImage) -> UIImage {
 final class PickerModel: ObservableObject {
     let input: PickerInput
     let icons: [UIImage]
-    let wallpaper: UIImage?
+    @Published var wallpaper: UIImage?
 
     @Published var safeInsets = UIEdgeInsets.zero
     @Published var page = 0
@@ -211,6 +215,59 @@ final class PickerModel: ObservableObject {
         quickOptionValues = input.quickOptions.map(\.defaultValue)
         showingStartError = input.startError != nil
         wallpaper = input.wallpaperPath.flatMap { UIImage(contentsOfFile: $0) }
+    }
+
+    /// Saves a photo as the wallpaper, in place of any other wallpaper file.
+    func setWallpaper(_ photo: UIImage) {
+        let image = screenSized(photo)
+        guard let data = image.jpegData(compressionQuality: 0.9) else {
+            return
+        }
+        removeWallpaperFiles()
+        // One of the names in wallpaperFiles.
+        let url = URL(fileURLWithPath: input.wallpaperFolder)
+            .appendingPathComponent("Wallpaper.jpg")
+        do {
+            try data.write(to: url)
+            wallpaper = image
+        } catch {
+            NSLog("Couldn't save the wallpaper: %@", error.localizedDescription)
+        }
+    }
+
+    func removeWallpaper() {
+        removeWallpaperFiles()
+        wallpaper = nil
+    }
+
+    private func removeWallpaperFiles() {
+        let folder = URL(fileURLWithPath: input.wallpaperFolder)
+        for name in input.wallpaperFiles {
+            try? FileManager.default.removeItem(at: folder.appendingPathComponent(name))
+        }
+    }
+
+    /// Photos can be far bigger than the screen, which the wallpaper only
+    /// fills, so shrink them until their short side covers its long side.
+    private func screenSized(_ photo: UIImage) -> UIImage {
+        let screen = UIScreen.main.nativeBounds.size
+        let pixels = CGSize(
+            width: photo.size.width * photo.scale,
+            height: photo.size.height * photo.scale
+        )
+        let factor = max(screen.width, screen.height) / min(pixels.width, pixels.height)
+        guard factor < 1 else {
+            return photo
+        }
+        let size = CGSize(
+            width: (pixels.width * factor).rounded(),
+            height: (pixels.height * factor).rounded()
+        )
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        return UIGraphicsImageRenderer(size: size, format: format).image { _ in
+            photo.draw(in: CGRect(origin: .zero, size: size))
+        }
     }
 
     /// Rust turns the quick option values into option arguments.
@@ -488,12 +545,20 @@ struct PickerView: View {
             ZStack(alignment: .topLeading) {
                 Color.black
                 if let wallpaper = model.wallpaper {
+                    // Below the header, which would hide its top.
+                    let area = CGRect(
+                        x: 0,
+                        y: layout.header.maxY,
+                        width: layout.size.width,
+                        height: layout.size.height - layout.header.maxY
+                    )
                     Image(uiImage: wallpaper)
                         .resizable()
                         .scaledToFill()
-                        .frame(width: layout.size.width, height: layout.size.height)
+                        .frame(width: area.width, height: area.height)
                         .clipped()
                         .opacity(0.8)
+                        .position(x: area.midX, y: area.midY)
                 }
                 BrandingLabels(branding: model.input.branding, size: layout.size)
                 if let error = model.input.error {
@@ -897,6 +962,7 @@ struct SettingsView: View {
                             } footer: {
                                 Text("Shows the name instead, with a shorter header.")
                             }
+                            wallpaperSection
                             Section {
                                 Toggle("Hide Icon Label", isOn: $model.hideIconLabels)
                             } footer: {
@@ -972,6 +1038,43 @@ struct SettingsView: View {
             Text("Header Background Color")
         } footer: {
             Text(model.headerColor.name)
+        }
+    }
+
+    private var wallpaperSection: some View {
+        Section {
+            // Only used to hear what was picked.
+            let picked = Binding<PhotosPickerItem?>(
+                get: { nil },
+                set: { item in
+                    if let item {
+                        loadWallpaper(item)
+                    }
+                }
+            )
+            PhotosPicker(selection: picked, matching: .images) {
+                Text("Choose Wallpaper")
+            }
+            if model.wallpaper != nil {
+                Button("Remove Wallpaper", role: .destructive) {
+                    model.removeWallpaper()
+                }
+            }
+        } header: {
+            Text("Wallpaper")
+        } footer: {
+            Text("A photo to show behind the games' icons.")
+        }
+    }
+
+    private func loadWallpaper(_ item: PhotosPickerItem) {
+        Task { @MainActor in
+            guard let data = try? await item.loadTransferable(type: Data.self),
+                  let photo = UIImage(data: data)
+            else {
+                return
+            }
+            model.setWallpaper(photo)
         }
     }
 

@@ -89,13 +89,20 @@ pub fn app_picker(apps: Result<Vec<AppInfo>, String>) -> Result<(PathBuf, Vec<St
         .collect();
     let optional = |s: Option<String>| s.map_or("null".to_owned(), |s| json_string(&s));
     let json = format!(
-        "{{\"apps\":[{}],\"error\":{},\"wallpaperPath\":{},\"branding\":{},\
+        "{{\"apps\":[{}],\"error\":{},\"wallpaperPath\":{},\
+         \"wallpaperFolder\":{},\"wallpaperFiles\":[{}],\"branding\":{},\
          \"shortVersionText\":{},\"copyright\":{},\
          \"fileManagerURL\":{},\"websiteURL\":{},\"quickOptions\":[{}],\
          \"startError\":{}}}",
         apps_json.join(","),
         optional(error),
         optional(wallpaper.map(|p| p.to_string_lossy().into_owned())),
+        json_string(&paths::user_data_base_path().to_string_lossy()),
+        paths::wallpaper_files()
+            .iter()
+            .map(|file| json_string(file))
+            .collect::<Vec<_>>()
+            .join(","),
         json_string(branding),
         json_string(crate::DISPLAY_VERSION),
         json_string(&crate::licenses::get_text()),
