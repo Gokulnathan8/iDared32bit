@@ -158,6 +158,14 @@ pub const CLASSES: ClassExports = objc_classes! {
     autorelease(env, new)
 }
 
+- (id)fontWithSize:(CGFloat)size {
+    let kind = env.objc.borrow::<UIFontHostObject>(this).kind;
+    let host_object = UIFontHostObject { size, kind };
+    let class = msg![env; this class];
+    let new = env.objc.alloc_object(class, Box::new(host_object), &mut env.mem);
+    autorelease(env, new)
+}
+
 - (CGFloat)pointSize {
     let host_object = env.objc.borrow::<UIFontHostObject>(this);
     host_object.size
