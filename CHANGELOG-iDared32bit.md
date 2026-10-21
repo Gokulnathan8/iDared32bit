@@ -17,6 +17,9 @@ Compatibility:
 - Alerts in games are now shown, and their buttons work, fixing a crash in some games.
 - Fixed a crash in some games that watch for changes to their settings.
 - Fixed some games that look through folders of files, such as their saves.
+- Games now use the fonts they come with.
+- Fixed menus and screens in some games that stopped partway through their animations, didn't show their buttons, or stayed black.
+- Animated images in games now play.
 - Various small fixes.
 
 ## v1.4.3 (2026-10-18)
