@@ -11,12 +11,14 @@ use crate::frameworks::core_foundation::time::CFTimeInterval;
 use crate::frameworks::core_graphics::cg_path::{CGMutablePathRef, CGPathRelease, CGPathRetain};
 use crate::frameworks::foundation::ns_string::{get_static_str, to_rust_string};
 use crate::frameworks::foundation::NSUInteger;
+use crate::objc::msg_send;
 use crate::objc::{
     autorelease, id, msg, nil, objc_classes, release, retain, todo_objc_setter, Class,
     ClassExports, HostObject, NSZonePtr,
 };
 use crate::Environment;
 use crate::{impl_HostObject_with_superclass, msg_class, msg_super};
+use std::collections::HashMap;
 
 type CATransitionType = id; // NSString*
 const kCATransitionFade: &str = "fade";
@@ -115,6 +117,8 @@ struct CAAnimationHostObject {
     duration: CFTimeInterval,
     fill_mode: &'static str,
     started_at: Option<CFTimeInterval>,
+    /// Values for keys that aren't properties (see `valueForKey:`), retained.
+    other_values: HashMap<String, id>,
 }
 impl HostObject for CAAnimationHostObject {}
 impl Default for CAAnimationHostObject {
@@ -129,6 +133,7 @@ impl Default for CAAnimationHostObject {
             duration: Default::default(),
             fill_mode: kCAFillModeRemoved,
             started_at: None,
+            other_values: HashMap::new(),
         }
     }
 }
@@ -351,6 +356,53 @@ pub const CLASSES: ClassExports = objc_classes! {
     get_static_str(env, fill_mode)
 }
 
+// Like CALayer, CAAnimation keeps values for any key that isn't a property.
+- (())setValue:(id)value forUndefinedKey:(id)key { // NSString*
+    let key = to_rust_string(env, key).into_owned();
+    retain(env, value);
+    let host_obj = env.objc.borrow_mut::<CAAnimationHostObject>(this);
+    let old = if value == nil {
+        host_obj.other_values.remove(&key)
+    } else {
+        host_obj.other_values.insert(key, value)
+    };
+    if let Some(old) = old {
+        release(env, old);
+    }
+}
+- (id)valueForKey:(id)key { // NSString*
+    let key_str = to_rust_string(env, key).into_owned();
+    if let Some(&value) = env.objc.borrow::<CAAnimationHostObject>(this).other_values.get(&key_str) {
+        return value;
+    }
+    match &*key_str {
+        "duration" | "beginTime" => {
+            let selector = env.objc.lookup_selector(&key_str).unwrap();
+            let value: CFTimeInterval = msg_send(env, (this, selector));
+            msg_class![env; NSNumber numberWithDouble:value]
+        }
+        "repeatCount" => {
+            let value: f32 = msg![env; this repeatCount];
+            msg_class![env; NSNumber numberWithFloat:value]
+        }
+        "autoreverses" | "removedOnCompletion" => {
+            let selector = if key_str == "autoreverses" { "autoreverses" } else { "isRemovedOnCompletion" };
+            let selector = env.objc.lookup_selector(selector).unwrap();
+            let value: bool = msg_send(env, (this, selector));
+            msg_class![env; NSNumber numberWithBool:value]
+        }
+        // Properties holding objects.
+        "delegate" | "timingFunction" | "fillMode" | "keyPath" | "fromValue" | "toValue"
+        | "byValue" | "values" | "keyTimes" | "timingFunctions" | "calculationMode"
+        | "rotationMode" | "animations" => {
+            let selector = env.objc.lookup_selector(&key_str).unwrap();
+            msg_send(env, (this, selector))
+        }
+        // An unset key: nil, like on a device.
+        _ => nil,
+    }
+}
+
 - (())dealloc {
     let &CAAnimationHostObject { delegate, timing_function, .. } = env.objc.borrow(this);
     if delegate != nil {
@@ -358,6 +410,10 @@ pub const CLASSES: ClassExports = objc_classes! {
     }
     if timing_function != nil {
         release(env, timing_function);
+    }
+    let other_values = std::mem::take(&mut env.objc.borrow_mut::<CAAnimationHostObject>(this).other_values);
+    for value in other_values.into_values() {
+        release(env, value);
     }
 
     env.objc.dealloc_object(this, &mut env.mem)
