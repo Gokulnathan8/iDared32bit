@@ -185,6 +185,12 @@ final class PickerModel: ObservableObject {
         }
     }
 
+    @Published var hideIconLabels = UserDefaults.standard.bool(forKey: hideIconLabelsKey) {
+        didSet {
+            UserDefaults.standard.set(hideIconLabels, forKey: hideIconLabelsKey)
+        }
+    }
+
     /// The logo is dimmed and black and white on the black header.
     var blackHeaderShown: Bool {
         headerColor == .black
@@ -258,6 +264,7 @@ let logoYellow = Color(red: 253 / 255, green: 224 / 255, blue: 22 / 255)
 
 private let headerColorKey = "AppPickerHeaderColor"
 private let hideHeaderLogoKey = "AppPickerHideHeaderLogo"
+private let hideIconLabelsKey = "AppPickerHideIconLabels"
 private let headerTextColorKey = "AppPickerHeaderTextColor"
 
 /// The header text colors to choose from, for the version, name and About.
@@ -720,18 +727,20 @@ struct IconGrid: View {
                     .opacity(model.pressedApp == app ? 0.5 : 1)
                     .shadow(color: .black.opacity(0.35), radius: 3, y: 2)
                     .place(iconFrame)
-                Text(labels[slot].text)
-                    .font(.system(size: labelFontSize, weight: .medium))
-                    .foregroundColor(.white)
-                    .shadow(color: .black.opacity(0.7), radius: 2, y: 1)
-                    .lineLimit(1)
-                    .fixedSize()
-                    .place(CGRect(
-                        x: (iconFrame.midX - labels[slot].width / 2).rounded(),
-                        y: (iconFrame.maxY + 4).rounded(),
-                        width: labels[slot].width,
-                        height: labelLineHeight
-                    ))
+                if !model.hideIconLabels {
+                    Text(labels[slot].text)
+                        .font(.system(size: labelFontSize, weight: .medium))
+                        .foregroundColor(.white)
+                        .shadow(color: .black.opacity(0.7), radius: 2, y: 1)
+                        .lineLimit(1)
+                        .fixedSize()
+                        .place(CGRect(
+                            x: (iconFrame.midX - labels[slot].width / 2).rounded(),
+                            y: (iconFrame.maxY + 4).rounded(),
+                            width: labels[slot].width,
+                            height: labelLineHeight
+                        ))
+                }
             }
             PageControl(model: model, pageCount: pageCount)
                 .place(layout.pageControlFrame)
@@ -887,6 +896,11 @@ struct SettingsView: View {
                                 Toggle("Hide Header Logo", isOn: $model.hideHeaderLogo)
                             } footer: {
                                 Text("Shows the name instead, with a shorter header.")
+                            }
+                            Section {
+                                Toggle("Hide Icon Label", isOn: $model.hideIconLabels)
+                            } footer: {
+                                Text("Shows the icons without the games' names under them.")
                             }
                         }
                     } label: {
