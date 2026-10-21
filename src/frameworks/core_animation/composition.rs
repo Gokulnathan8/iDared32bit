@@ -459,8 +459,6 @@ unsafe fn composite_layer_recursive(
     cumulative_transform: Matrix<4>,
     opacity: CGFloat,
 ) {
-    // TODO: this can't handle zPosition among other things, but it is not
-    //       supported yet :)
     // TODO: back-to-front drawing is not efficient, could we use front-to-back?
 
     // This is both acting as the presentationLayer and the private render layer
@@ -707,8 +705,19 @@ unsafe fn composite_layer_recursive(
     std::mem::drop(gles);
 
     // avoid holding mutable borrow while recursing
-    let original_host_obj = env.objc.borrow_mut::<CALayerHostObject>(layer);
-    for &child_layer in &original_host_obj.sublayers.clone() {
+    let mut sublayers = env
+        .objc
+        .borrow::<CALayerHostObject>(layer)
+        .sublayers
+        .clone();
+    // Higher zPosition is drawn on top. The sort is stable, so layers with
+    // the same zPosition keep their order.
+    sublayers.sort_by(|&a, &b| {
+        let a = env.objc.borrow::<CALayerHostObject>(a).z_position;
+        let b = env.objc.borrow::<CALayerHostObject>(b).z_position;
+        a.total_cmp(&b)
+    });
+    for &child_layer in &sublayers {
         // TODO: clipping/masksToBounds support
         composite_layer_recursive(
             env,

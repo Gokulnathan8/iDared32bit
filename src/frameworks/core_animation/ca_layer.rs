@@ -49,6 +49,7 @@ pub(super) struct CALayerHostObject {
     pub(super) hidden: bool,
     pub(super) opaque: bool,
     pub(super) opacity: f32,
+    pub(super) z_position: CGFloat,
     pub(super) background_color: Option<CGColorHostObject>,
     pub(super) corner_radius: CGFloat,
     pub(super) needs_display: bool,
@@ -129,6 +130,7 @@ pub const CLASSES: ClassExports = objc_classes! {
         hidden: false,
         opaque: false,
         opacity: 1.0,
+        z_position: 0.0,
         background_color: None, // transparency
         corner_radius: 0.0,
         needs_display: false,
@@ -365,6 +367,13 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 - (())setOpaque:(bool)opaque {
     env.objc.borrow_mut::<CALayerHostObject>(this).opaque = opaque;
+}
+
+- (CGFloat)zPosition {
+    env.objc.borrow::<CALayerHostObject>(this).z_position
+}
+- (())setZPosition:(CGFloat)z_position {
+    env.objc.borrow_mut::<CALayerHostObject>(this).z_position = z_position;
 }
 
 - (f32)opacity {
