@@ -497,12 +497,12 @@ struct Header: View {
                 .opacity(model.blackHeaderShown ? 0.65 : 1)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .place(CGRect(x: 16, y: content.minY, width: 60, height: content.height))
-            // The logo, or the name, fills the space between the version and
-            // the buttons.
+            // The logo, or the name, is centred, clear of the version and
+            // the About button.
             let logoFrame = CGRect(
                 x: 80,
                 y: content.minY + 2,
-                width: content.maxX - side - 84,
+                width: content.maxX - 160,
                 height: content.height - 4
             )
             if model.hideHeaderLogo {
