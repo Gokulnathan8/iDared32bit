@@ -146,6 +146,31 @@ typedef enum {
 + (NSNumber *)numberWithInt:(int)value;
 + (NSNumber *)numberWithFloat:(float)value;
 + (NSNumber *)numberWithBool:(bool)value;
+- (int)intValue;
+@end
+
+@interface NSNull : NSObject
++ (NSNull *)null;
+@end
+
+typedef enum {
+  NSKeyValueObservingOptionNew = 1,
+  NSKeyValueObservingOptionOld = 2,
+  NSKeyValueObservingOptionInitial = 4,
+  NSKeyValueObservingOptionPrior = 8,
+} NSKeyValueObservingOptions;
+extern NSString *const NSKeyValueChangeKindKey;
+extern NSString *const NSKeyValueChangeNewKey;
+extern NSString *const NSKeyValueChangeOldKey;
+
+@interface NSObject (NSKeyValueObserving)
+- (void)addObserver:(NSObject *)observer
+         forKeyPath:(NSString *)keyPath
+            options:(NSKeyValueObservingOptions)options
+            context:(void *)context;
+- (void)removeObserver:(NSObject *)observer forKeyPath:(NSString *)keyPath;
+- (void)willChangeValueForKey:(NSString *)key;
+- (void)didChangeValueForKey:(NSString *)key;
 @end
 
 NSString *NSStringFromClass(Class);

@@ -15,6 +15,7 @@ Compatibility:
 - Fixed missing music in some games that use 8-bit sound files.
 - Fixed a crash on iPhone and iPad in some games after playing for a while.
 - Alerts in games are now shown, and their buttons work, fixing a crash in some games.
+- Fixed a crash in some games that watch for changes to their settings.
 
 ## v1.4.3 (2026-10-18)
 

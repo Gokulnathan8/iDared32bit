@@ -141,7 +141,9 @@ pub const CLASSES: ClassExports = objc_classes! {
     // Behaviour was confirmed on macOS.
     // Only app domain gets affected here (this part wasn't verified).
     let dict = env.objc.borrow::<NSUserDefaultsHostObject>(this).app_domain_dict;
-    msg![env; dict setValue:val forKey:key]
+    () = msg![env; this willChangeValueForKey:key];
+    () = msg![env; dict setValue:val forKey:key];
+    msg![env; this didChangeValueForKey:key]
 }
 
 - (id)objectForKey:(id)key { // NSString*
@@ -178,13 +180,17 @@ pub const CLASSES: ClassExports = objc_classes! {
          forKey:(id)key { // NSString*
     // Only app domain gets affected!
     let dict = env.objc.borrow::<NSUserDefaultsHostObject>(this).app_domain_dict;
-    msg![env; dict setObject:object forKey:key]
+    () = msg![env; this willChangeValueForKey:key];
+    () = msg![env; dict setObject:object forKey:key];
+    msg![env; this didChangeValueForKey:key]
 }
 
 - (())removeObjectForKey:(id)key {
     // Only app domain gets affected!
     let dict = env.objc.borrow::<NSUserDefaultsHostObject>(this).app_domain_dict;
-    msg![env; dict removeObjectForKey:key]
+    () = msg![env; this willChangeValueForKey:key];
+    () = msg![env; dict removeObjectForKey:key];
+    msg![env; this didChangeValueForKey:key]
 }
 
 - (id)dataForKey:(id)key {

@@ -15,7 +15,7 @@
 //! See also: [crate::objc], especially the `objects` module.
 
 use super::ns_string::{from_rust_string, to_rust_string};
-use super::{NSTimeInterval, NSUInteger};
+use super::{ns_key_value_observing, NSTimeInterval, NSUInteger};
 use crate::frameworks::foundation::ns_run_loop::{add_perform_request, cancel_perform_requests};
 use crate::frameworks::foundation::ns_thread::detach_new_thread_inner;
 use crate::libc::semaphore::{host_destroy_semaphore, sem_wait};
@@ -122,6 +122,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (())dealloc {
     log_dbg!("[{:?} dealloc]", this);
+    ns_key_value_observing::forget_object(env, this);
     env.objc.dealloc_object(this, &mut env.mem)
 }
 
@@ -241,11 +242,27 @@ forUndefinedKey:(id)key { // NSString*
         env.objc.debug_all_class_ivars_as_strings(class).join(", "));
 }
 
-- (())willChangeValueForKey:(id)_key { // NSString *
-    log_once!("TODO: NSObject willChangeValueForKey:");
+// NSKeyValueObserving
+- (())addObserver:(id)observer
+       forKeyPath:(id)key_path // NSString *
+          options:(NSUInteger)options
+          context:(MutVoidPtr)context {
+    ns_key_value_observing::add_observer(env, this, observer, key_path, options, context);
 }
-- (())didChangeValueForKey:(id)_key { // NSString *
-    log_once!("TODO: NSObject didChangeValueForKey:");
+- (())removeObserver:(id)observer
+          forKeyPath:(id)key_path { // NSString *
+    ns_key_value_observing::remove_observer(env, this, observer, key_path, None);
+}
+- (())removeObserver:(id)observer
+          forKeyPath:(id)key_path // NSString *
+             context:(MutVoidPtr)context {
+    ns_key_value_observing::remove_observer(env, this, observer, key_path, Some(context));
+}
+- (())willChangeValueForKey:(id)key { // NSString *
+    ns_key_value_observing::will_change(env, this, key);
+}
+- (())didChangeValueForKey:(id)key { // NSString *
+    ns_key_value_observing::did_change(env, this, key);
 }
 
 - (bool)respondsToSelector:(SEL)selector {

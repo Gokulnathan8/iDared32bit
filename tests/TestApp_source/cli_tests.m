@@ -6903,6 +6903,95 @@ int test_NSMutableArray_removeObjectsInArray_otherArray() {
   return 0;
 }
 
+@interface KVOObserver : NSObject {
+@public
+  int count;
+  id lastNew;
+  id lastOld;
+  void *lastContext;
+}
+@end
+
+@implementation KVOObserver
+- (void)observeValueForKeyPath:(NSString *)keyPath
+                      ofObject:(id)object
+                        change:(NSDictionary *)change
+                       context:(void *)context {
+  count++;
+  lastNew = [change objectForKey:NSKeyValueChangeNewKey];
+  lastOld = [change objectForKey:NSKeyValueChangeOldKey];
+  lastContext = context;
+}
+@end
+
+// Changes its value the way NSUserDefaults does, with manual notifications.
+@interface KVOObserved : NSObject {
+  NSNumber *value;
+}
+@end
+
+@implementation KVOObserved
+- (id)valueForKey:(NSString *)key {
+  return value;
+}
+- (void)setValue:(NSNumber *)newValue {
+  NSString *key = [NSString stringWithUTF8String:"value"];
+  [self willChangeValueForKey:key];
+  [newValue retain];
+  [value release];
+  value = newValue;
+  [self didChangeValueForKey:key];
+}
+- (void)dealloc {
+  [value release];
+  [super dealloc];
+}
+@end
+
+int test_KVO_manual_notifications() {
+  NSAutoreleasePool *pool = [NSAutoreleasePool new];
+  KVOObserved *object = [KVOObserved new];
+  KVOObserver *observer = [KVOObserver new];
+  NSString *key = [NSString stringWithUTF8String:"value"];
+  static int context;
+  int res = 0;
+
+  [object
+      addObserver:observer
+       forKeyPath:key
+          options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld |
+                  NSKeyValueObservingOptionInitial
+          context:&context];
+  // Initial: the current value (none), and no old value.
+  if (observer->count != 1 || observer->lastNew != [NSNull null] ||
+      observer->lastOld != nil || observer->lastContext != &context) {
+    res = -1;
+  }
+
+  [object setValue:[NSNumber numberWithInt:5]];
+  if (!res && (observer->count != 2 || [observer->lastNew intValue] != 5 ||
+               observer->lastOld != [NSNull null])) {
+    res = -2;
+  }
+
+  [object setValue:[NSNumber numberWithInt:7]];
+  if (!res && (observer->count != 3 || [observer->lastNew intValue] != 7 ||
+               [observer->lastOld intValue] != 5)) {
+    res = -3;
+  }
+
+  [object removeObserver:observer forKeyPath:key];
+  [object setValue:[NSNumber numberWithInt:9]];
+  if (!res && observer->count != 3) {
+    res = -4;
+  }
+
+  [object release];
+  [observer release];
+  [pool drain];
+  return res;
+}
+
 int test_malloc_zone_basic() {
   malloc_zone_t *zone = malloc_create_zone(0, 0);
   unsigned char *p = malloc_zone_malloc(zone, 128);
@@ -7248,6 +7337,7 @@ struct {
     FUNC_DEF(test_NSNotificationCenter_addObserver_nilName_withObject),
     FUNC_DEF(test_NSNotificationCenter_addObserver_nilName_removeObserver),
     FUNC_DEF(test_NSMutableArray_removeObjectsInArray_otherArray),
+    FUNC_DEF(test_KVO_manual_notifications),
     FUNC_DEF(test_malloc_zone_basic),
     FUNC_DEF(test_malloc_zone_struct_dispatch),
     FUNC_DEF(test_fcvt),
