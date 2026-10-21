@@ -892,6 +892,22 @@ struct SettingsView: View {
                     } label: {
                         Label("Theme Options", systemImage: "paintpalette")
                     }
+                    // The same screen as the header's About button, which is
+                    // drawn over the picker, so Settings closes first.
+                    Button {
+                        model.showingSettings = false
+                        model.copyrightPage = 0
+                        model.showingCopyright = true
+                    } label: {
+                        // White text like the row above; only the icon is
+                        // tinted, as a button's whole label would be.
+                        Label {
+                            Text("About/Copyright")
+                                .foregroundColor(.primary)
+                        } icon: {
+                            Image(systemName: "info.circle")
+                        }
+                    }
                 }
             }
             .navigationTitle("Settings")
