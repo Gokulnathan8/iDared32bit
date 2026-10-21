@@ -518,6 +518,50 @@ pub struct Fs {
     working_directory: GuestPathBuf,
     home_directory: GuestPathBuf,
 }
+fn host_modified(path: &Path) -> Result<i64, ()> {
+    // TODO: account for the current timezone, here it's in GMT
+    fs::metadata(path)
+        .and_then(|m| m.modified())
+        .map(|t| {
+            t.duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs()
+                .try_into()
+                .unwrap()
+        })
+        .map_err(|_| ())
+}
+
+fn node_modified(node: &FsNode) -> Result<i64, ()> {
+    match node {
+        FsNode::File { location, .. } => match location {
+            // Note: the returned time is consistent with 'Date' and 'Time'
+            // of files inside IPA archive as reported by 7-zip.
+            // But it can be few hours off in comparison with modification
+            // time reported by NSFileModificationDate for app bundle files
+            // and changes if system timezone changes and apps gets
+            // re-installed!
+            // This shouldn't be a big problem as we're always assuming
+            // GMT in the codebase right now.
+            // TODO: double check that when we support different timezones
+            FileLocation::IpaFileRef(ipa_file_ref) => Ok(ipa_file_ref.get_last_modified().into()),
+            FileLocation::Path(path) => host_modified(path),
+            _ => unimplemented!(),
+        },
+        FsNode::Directory {
+            writeable: Some(host_path),
+            ..
+        } => host_modified(host_path),
+        // A bundle directory has no host directory behind it. A directory's
+        // time changes when its entries do, so use the newest of those.
+        FsNode::Directory { children, .. } => Ok(children
+            .values()
+            .filter_map(|child| node_modified(child).ok())
+            .max()
+            .unwrap_or(0)),
+    }
+}
+
 impl Fs {
     /// Construct a filesystem containing a home directory for the app, its
     /// bundle and documents, and the bundled shared libraries. Returns the new
@@ -828,37 +872,7 @@ impl Fs {
     pub fn modified(&self, path: &GuestPath) -> Result<i64, ()> {
         // TODO: error handling
         let node = self.lookup_node(path).ok_or(())?;
-        match node {
-            FsNode::File { location, .. } => match location {
-                // Note: the returned time is consistent with 'Date' and 'Time'
-                // of files inside IPA archive as reported by 7-zip.
-                // But it can be few hours off in comparison with modification
-                // time reported by NSFileModificationDate for app bundle files
-                // and changes if system timezone changes and apps gets
-                // re-installed!
-                // This shouldn't be a big problem as we're always assuming
-                // GMT in the codebase right now.
-                // TODO: double check that when we support different timezones
-                FileLocation::IpaFileRef(ipa_file_ref) => {
-                    Ok(ipa_file_ref.get_last_modified().into())
-                }
-                FileLocation::Path(path) => {
-                    // TODO: account for the current timezone, here it's in GMT
-                    fs::metadata(path)
-                        .and_then(|m| m.modified())
-                        .map(|t| {
-                            t.duration_since(UNIX_EPOCH)
-                                .unwrap()
-                                .as_secs()
-                                .try_into()
-                                .unwrap()
-                        })
-                        .map_err(|_| ())
-                }
-                _ => unimplemented!(),
-            },
-            _ => unimplemented!(),
-        }
+        node_modified(node)
     }
 
     pub fn size(&self, path: &GuestPath) -> Result<u64, ()> {
@@ -872,7 +886,8 @@ impl Fs {
                 }
                 _ => unimplemented!(),
             },
-            _ => unimplemented!(),
+            // As HFS+ reports it: 34 bytes per entry, counting . and ..
+            FsNode::Directory { children, .. } => Ok((children.len() as u64 + 2) * 34),
         }
     }
 
