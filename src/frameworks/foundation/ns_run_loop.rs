@@ -21,7 +21,8 @@ use crate::frameworks::{core_animation, media_player, uikit};
 use crate::libc::semaphore::{host_create_semaphore, sem_post, sem_t};
 use crate::mem::MutPtr;
 use crate::objc::{
-    id, msg, msg_send, nil, objc_classes, release, retain, Class, ClassExports, HostObject, SEL,
+    id, msg, msg_send, msg_send_no_type_checking, nil, objc_classes, release, retain, Class,
+    ClassExports, HostObject, SEL,
 };
 use crate::Environment;
 use std::collections::VecDeque;
@@ -427,7 +428,8 @@ pub fn run_run_loop(
                     log_dbg!("Running object selector request {target:?} {:?} {argument:?} on run loop {run_loop:?}", selector.as_str(env.mem.as_mut()));
 
                     if selector.as_str(&env.mem).ends_with(':') {
-                        () = msg_send(env, (target, selector, argument));
+                        // The method may take a non-object argument.
+                        () = msg_send_no_type_checking(env, (target, selector, argument));
                     } else {
                         // As on a device, a method without one ignores it.
                         () = msg_send(env, (target, selector));

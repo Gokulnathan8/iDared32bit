@@ -419,7 +419,9 @@ forUndefinedKey:(id)key { // NSString*
     log_dbg!("performSelectorOnMainThread:{} withObject:{:?} waitUntilDone:{}", sel.as_str(&env.mem), arg, wait);
     if wait && env.current_thread == 0 {
         if sel.as_str(&env.mem).ends_with(':') {
-            () = msg_send(env, (this, sel, arg));
+            // Like performSelector:withObject:, the method may take a
+            // non-object argument.
+            () = msg_send_no_type_checking(env, (this, sel, arg));
         } else {
             // As on a device, a method without one ignores the argument.
             () = msg_send(env, (this, sel));
