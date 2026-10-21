@@ -21,8 +21,8 @@ use crate::frameworks::{core_animation, media_player, uikit};
 use crate::libc::semaphore::{host_create_semaphore, sem_post, sem_t};
 use crate::mem::MutPtr;
 use crate::objc::{
-    id, msg, msg_send, msg_send_no_type_checking, nil, objc_classes, release, retain, Class,
-    ClassExports, HostObject, SEL,
+    id, msg, msg_class, msg_send, msg_send_no_type_checking, nil, objc_classes, release, retain,
+    Class, ClassExports, HostObject, SEL,
 };
 use crate::Environment;
 use std::collections::VecDeque;
@@ -358,12 +358,19 @@ pub fn run_run_loop(
 
         // We want to process those only on the main run loop
         if is_main_run_loop {
+            // Like UIKit's main run loop, drain a pool each iteration, so
+            // objects autoreleased by, for example, animation delegates
+            // don't pile up in the app's outermost pool.
+            let pool: id = msg_class![env; NSAutoreleasePool new];
+
             let next_due = uikit::handle_events(env);
             limit_sleep_time(&mut sleep_until, next_due);
 
             uikit::ui_view::layout_if_needed(env);
             let next_due = core_animation::recomposite_if_necessary(env, false);
             limit_sleep_time(&mut sleep_until, next_due);
+
+            release(env, pool);
         }
 
         assert!(timers_tmp.is_empty());
