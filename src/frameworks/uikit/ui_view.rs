@@ -90,6 +90,8 @@ pub struct UIViewHostObject {
     clears_context_before_drawing: bool,
     user_interaction_enabled: bool,
     multiple_touch_enabled: bool,
+    /// Whether `layoutSubviews` should be called before the next frame.
+    needs_layout: bool,
 }
 impl HostObject for UIViewHostObject {}
 impl Default for UIViewHostObject {
@@ -105,6 +107,7 @@ impl Default for UIViewHostObject {
             clears_context_before_drawing: true,
             user_interaction_enabled: true,
             multiple_touch_enabled: false,
+            needs_layout: true,
         }
     }
 }
@@ -125,6 +128,15 @@ impl HostObject for UIViewAnimationDelegateHostObject {}
 pub fn set_view_controller(env: &mut Environment, view: id, controller: id) {
     let host_obj = env.objc.borrow_mut::<UIViewHostObject>(view);
     host_obj.view_controller = controller;
+}
+
+/// Lay out the views in the windows that need it, as UIKit does before
+/// drawing each frame.
+pub fn layout_if_needed(env: &mut Environment) {
+    let windows = env.framework_state.uikit.ui_view.ui_window.windows.clone();
+    for window in windows {
+        () = msg![env; window layoutIfNeeded];
+    }
 }
 
 /// Shared parts of `initWithCoder:` and `initWithFrame:`. These can't call
@@ -490,9 +502,15 @@ pub const CLASSES: ClassExports = objc_classes! {
     // nothing.
 }
 
+- (())setNeedsLayout {
+    env.objc.borrow_mut::<UIViewHostObject>(this).needs_layout = true;
+}
+
 - (())layoutIfNeeded {
-    // Pending layout isn't tracked, so lay out this view and its subviews now.
-    () = msg![env; this layoutSubviews];
+    let host_obj = env.objc.borrow_mut::<UIViewHostObject>(this);
+    if std::mem::take(&mut host_obj.needs_layout) {
+        () = msg![env; this layoutSubviews];
+    }
     let subviews = env.objc.borrow::<UIViewHostObject>(this).subviews.clone();
     // Laying out one could remove another.
     for &subview in &subviews {
@@ -567,6 +585,8 @@ pub const CLASSES: ClassExports = objc_classes! {
         let this_layer = this_obj.layer;
         () = msg![env; this_layer addSublayer:subview_layer];
     }
+    () = msg![env; this setNeedsLayout];
+    () = msg![env; view setNeedsLayout];
 }
 
 - (())insertSubview:(id)view atIndex:(NSInteger)index {
@@ -588,6 +608,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 
     assert!(index >= 0);
     () = msg![env; this_layer insertSublayer:subview_layer atIndex:(index as u32)];
+    () = msg![env; this setNeedsLayout];
+    () = msg![env; view setNeedsLayout];
 }
 
 - (())insertSubview:(id)view belowSubview:(id)sibling {
@@ -610,6 +632,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     subviews.insert(idx, view);
 
     () = msg![env; this_layer insertSublayer:subview_layer below:sibling_layer];
+    () = msg![env; this setNeedsLayout];
+    () = msg![env; view setNeedsLayout];
 }
 
 - (())bringSubviewToFront:(id)subview {
@@ -693,6 +717,7 @@ pub const CLASSES: ClassExports = objc_classes! {
         clears_context_before_drawing: _,
         user_interaction_enabled: _,
         multiple_touch_enabled: _,
+        needs_layout: _,
     } = std::mem::take(env.objc.borrow_mut(this));
 
     release(env, layer);
@@ -792,7 +817,11 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 - (())setBounds:(CGRect)bounds {
     let layer = env.objc.borrow::<UIViewHostObject>(this).layer;
-    msg![env; layer setBounds:bounds]
+    let old: CGRect = msg![env; layer bounds];
+    () = msg![env; layer setBounds:bounds];
+    if old.size != bounds.size {
+        () = msg![env; this setNeedsLayout];
+    }
 }
 - (CGPoint)center {
     // FIXME: what happens if [layer anchorPoint] isn't (0.5, 0.5)?
@@ -809,7 +838,11 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 - (())setFrame:(CGRect)frame {
     let layer = env.objc.borrow::<UIViewHostObject>(this).layer;
-    msg![env; layer setFrame:frame]
+    let old: CGRect = msg![env; layer frame];
+    () = msg![env; layer setFrame:frame];
+    if old.size != frame.size {
+        () = msg![env; this setNeedsLayout];
+    }
 }
 - (CGAffineTransform)transform {
     let layer = env.objc.borrow::<UIViewHostObject>(this).layer;
