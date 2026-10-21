@@ -68,6 +68,9 @@ pub(super) struct CALayerHostObject {
     pub(super) gles_texture: Option<crate::gles::gles11_raw::types::GLuint>,
     /// Internal state for compositor
     pub(super) gles_texture_is_up_to_date: bool,
+    /// Internal state for compositor: the `contents` the texture was made
+    /// from, which an animation can change without `setContents:`.
+    pub(super) gles_texture_contents: id,
     pub(super) animations: HashMap<String, id>, // CAAnimation*
     pub(super) anonymous_animations: HashSet<id>, // CAAnimation*
 }
@@ -145,6 +148,7 @@ pub const CLASSES: ClassExports = objc_classes! {
         cg_context: None,
         gles_texture: None,
         gles_texture_is_up_to_date: false,
+        gles_texture_contents: nil,
         animations: HashMap::new(),
         anonymous_animations: HashSet::new(),
     });

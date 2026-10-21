@@ -575,7 +575,9 @@ unsafe fn composite_layer_recursive(
     let need_texture = host_obj.presented_pixels.is_some()
         || host_obj.contents != nil
         || host_obj.cg_context.is_some();
-    let need_update = need_texture && !host_obj.gles_texture_is_up_to_date;
+    let need_update = need_texture
+        && (!host_obj.gles_texture_is_up_to_date
+            || host_obj.contents != host_obj.gles_texture_contents);
 
     if need_texture {
         if let Some(texture) = host_obj.gles_texture {
@@ -628,10 +630,10 @@ unsafe fn composite_layer_recursive(
     }
 
     if need_update {
-        // Update original layer field
-        env.objc
-            .borrow_mut::<CALayerHostObject>(layer)
-            .gles_texture_is_up_to_date = true;
+        // Update original layer fields
+        let original_host_obj = env.objc.borrow_mut::<CALayerHostObject>(layer);
+        original_host_obj.gles_texture_is_up_to_date = true;
+        original_host_obj.gles_texture_contents = host_obj.contents;
     }
 
     // Draw texture, if any

@@ -570,6 +570,11 @@ fn apply_keyframes(
             .into_iter()
             .map(|CGPoint { x, y }| vec![x, y])
             .collect()
+    } else if key_path == "contents" {
+        // Images can't be interpolated, so use their indices.
+        (0..keyframes.values.len())
+            .map(|i| vec![i as f32])
+            .collect()
     } else {
         keyframes
             .values
@@ -601,6 +606,10 @@ fn apply_keyframes(
         if mode == kCAAnimationCubicPaced {
             mode = kCAAnimationPaced;
         }
+    }
+    if key_path == "contents" && mode != kCAAnimationDiscrete {
+        log_once!("TODO: contents keyframes cross-fade, but are shown discretely");
+        mode = kCAAnimationDiscrete;
     }
     let paced = mode == kCAAnimationPaced;
     let discrete = mode == kCAAnimationDiscrete;
@@ -723,6 +732,7 @@ fn apply_keyframes(
             t.d = cos * scale_y;
         }
         "transform" => presentation.affine_transform = transform_from_components(&value),
+        "contents" => presentation.contents = keyframes.values[value[0] as usize],
         _ => unreachable!(),
     }
 }
