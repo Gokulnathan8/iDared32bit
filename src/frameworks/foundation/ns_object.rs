@@ -28,6 +28,28 @@ use crate::objc::{
     TYPE_LONGLONG, TYPE_SEL, TYPE_SHORT, TYPE_UCHAR, TYPE_UINT, TYPE_ULONG, TYPE_ULONGLONG,
     TYPE_UNDEF, TYPE_USHORT, TYPE_VOID,
 };
+use crate::Environment;
+
+/// The `NSMethodSignature*` of an instance method of `class`, or nil if
+/// there's no such method.
+fn method_signature(env: &mut Environment, class: Class, sel: SEL) -> id {
+    if !env.objc.class_has_method(class, sel) {
+        return nil;
+    }
+    // TODO: support `host` method signatures
+    let Some(&sig) = env.objc.class_get_method_signature(class, sel) else {
+        panic!(
+            "TODO: method signature of host method {}",
+            sel.as_str(&env.mem)
+        );
+    };
+    log_dbg!(
+        "method signature: '{}' -> {:?}",
+        sel.as_str(&env.mem),
+        env.mem.cstr_at_utf8(sig)
+    );
+    msg_class![env; NSMethodSignature signatureWithObjCTypes:sig]
+}
 
 pub const CLASSES: ClassExports = objc_classes! {
 
@@ -90,10 +112,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 + (id)instanceMethodSignatureForSelector:(SEL)sel {
-    // TODO: support `host` method signatures
-    let sig = *env.objc.class_get_method_signature(this, sel).unwrap();
-    log_dbg!("instanceMethodSignatureForSelector: '{}' -> {:?}", sel.as_str(&env.mem), env.mem.cstr_at_utf8(sig));
-    msg_class![env; NSMethodSignature signatureWithObjCTypes:sig]
+    method_signature(env, this, sel)
 }
 
 + (GuestFunction)instanceMethodForSelector:(SEL)selector {
@@ -357,6 +376,11 @@ forUndefinedKey:(id)key { // NSString*
 }
 - (())didChangeValueForKey:(id)key { // NSString *
     ns_key_value_observing::did_change(env, this, key);
+}
+
+- (id)methodSignatureForSelector:(SEL)sel {
+    let class = ObjC::read_isa(this, &env.mem);
+    method_signature(env, class, sel)
 }
 
 - (bool)respondsToSelector:(SEL)selector {
