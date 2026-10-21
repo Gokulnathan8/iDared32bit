@@ -406,6 +406,46 @@ pub const CLASSES: ClassExports = objc_classes! {
     }
 }
 
+// NSCopying implementation. The copy hasn't started or stopped yet.
+- (id)copyWithZone:(NSZonePtr)_zone {
+    let class: Class = msg![env; this class];
+    let new: id = msg![env; class alloc];
+    () = msg![env; new _touchHLE_copyPropertiesFrom:this];
+    new
+}
+
+// Each class copies its own properties, then calls its superclass.
+- (())_touchHLE_copyPropertiesFrom:(id)other { // CAAnimation*
+    let other_host = env.objc.borrow::<CAAnimationHostObject>(other);
+    let other_values = other_host.other_values.clone();
+    let &CAAnimationHostObject {
+        removed_on_completion,
+        timing_function,
+        delegate,
+        autoreverses,
+        repeat_count,
+        begin_time,
+        duration,
+        fill_mode,
+        ..
+    } = other_host;
+    retain(env, timing_function);
+    retain(env, delegate);
+    for &value in other_values.values() {
+        retain(env, value);
+    }
+    let host = env.objc.borrow_mut::<CAAnimationHostObject>(this);
+    host.removed_on_completion = removed_on_completion;
+    host.timing_function = timing_function;
+    host.delegate = delegate;
+    host.autoreverses = autoreverses;
+    host.repeat_count = repeat_count;
+    host.begin_time = begin_time;
+    host.duration = duration;
+    host.fill_mode = fill_mode;
+    host.other_values = other_values;
+}
+
 - (())dealloc {
     let &CAAnimationHostObject { delegate, timing_function, .. } = env.objc.borrow(this);
     if delegate != nil {
@@ -455,6 +495,19 @@ pub const CLASSES: ClassExports = objc_classes! {
     env.objc.borrow::<CAPropertyAnimationHostObject>(this).cumulative
 }
 
+- (())_touchHLE_copyPropertiesFrom:(id)other { // CAPropertyAnimation*
+    () = msg_super![env; this _touchHLE_copyPropertiesFrom:other];
+    let &CAPropertyAnimationHostObject {
+        key_path,
+        cumulative,
+        ..
+    } = env.objc.borrow(other);
+    retain(env, key_path);
+    let host = env.objc.borrow_mut::<CAPropertyAnimationHostObject>(this);
+    host.key_path = key_path;
+    host.cumulative = cumulative;
+}
+
 - (())dealloc {
     let &CAPropertyAnimationHostObject { key_path, .. } = env.objc.borrow(this);
     if key_path != nil {
@@ -499,6 +552,23 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 - (id)byValue {
     env.objc.borrow::<CABasicAnimationHostObject>(this).by_value
+}
+
+- (())_touchHLE_copyPropertiesFrom:(id)other { // CABasicAnimation*
+    () = msg_super![env; this _touchHLE_copyPropertiesFrom:other];
+    let &CABasicAnimationHostObject {
+        from_value,
+        to_value,
+        by_value,
+        ..
+    } = env.objc.borrow(other);
+    retain(env, from_value);
+    retain(env, to_value);
+    retain(env, by_value);
+    let host = env.objc.borrow_mut::<CABasicAnimationHostObject>(this);
+    host.from_value = from_value;
+    host.to_value = to_value;
+    host.by_value = by_value;
 }
 
 - (())dealloc {
@@ -600,6 +670,31 @@ pub const CLASSES: ClassExports = objc_classes! {
     env.objc.borrow::<CAKeyframeAnimationHostObject>(this).rotation_mode
 }
 
+- (())_touchHLE_copyPropertiesFrom:(id)other { // CAKeyframeAnimation*
+    () = msg_super![env; this _touchHLE_copyPropertiesFrom:other];
+    let &CAKeyframeAnimationHostObject {
+        values,
+        key_times,
+        timing_functions,
+        path,
+        calculation_mode,
+        rotation_mode,
+        ..
+    } = env.objc.borrow(other);
+    retain(env, values);
+    retain(env, key_times);
+    retain(env, timing_functions);
+    CGPathRetain(env, path);
+    retain(env, rotation_mode);
+    let host = env.objc.borrow_mut::<CAKeyframeAnimationHostObject>(this);
+    host.values = values;
+    host.key_times = key_times;
+    host.timing_functions = timing_functions;
+    host.path = path;
+    host.calculation_mode = calculation_mode;
+    host.rotation_mode = rotation_mode;
+}
+
 - (())dealloc {
     let &CAKeyframeAnimationHostObject {
         values,
@@ -642,6 +737,13 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 - (id)animations {
     env.objc.borrow::<CAAnimationGroupHostObject>(this).animations
+}
+
+- (())_touchHLE_copyPropertiesFrom:(id)other { // CAAnimationGroup*
+    () = msg_super![env; this _touchHLE_copyPropertiesFrom:other];
+    let animations = env.objc.borrow::<CAAnimationGroupHostObject>(other).animations;
+    retain(env, animations);
+    env.objc.borrow_mut::<CAAnimationGroupHostObject>(this).animations = animations;
 }
 
 - (())dealloc {

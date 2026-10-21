@@ -621,6 +621,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (())addAnimation:(id)anim // CAAnimation*
             forKey:(id)key { // NSString*
+    // Like Core Animation, keep a copy, so the app can reuse the original.
+    let anim: id = msg![env; anim copy];
     let duration: CFTimeInterval = msg![env; anim duration];
     if duration == 0.0 {
         // From the docs:
@@ -639,9 +641,12 @@ pub const CLASSES: ClassExports = objc_classes! {
     } else {
         let key_string = to_rust_string(env, key);
         log_dbg!("[(CALayer*){:?} addAnimation:{:?} forKey:{:?} ({:?})]", this, anim, key, key_string);
-        env.objc.borrow_mut::<CALayerHostObject>(this).animations.insert(key_string.to_string(), anim);
+        let host_obj = env.objc.borrow_mut::<CALayerHostObject>(this);
+        // An animation with the same key replaces the old one.
+        if let Some(old) = host_obj.animations.insert(key_string.to_string(), anim) {
+            release(env, old);
+        }
     }
-    retain(env, anim);
 }
 
 - (id)animationForKey:(id)key { // NSString*
