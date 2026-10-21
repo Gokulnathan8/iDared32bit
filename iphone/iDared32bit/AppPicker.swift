@@ -185,10 +185,15 @@ final class PickerModel: ObservableObject {
         }
     }
 
-    /// The header's contents are dimmed and black and white on the black
-    /// header.
+    /// The logo is dimmed and black and white on the black header.
     var blackHeaderShown: Bool {
         headerColor == .black
+    }
+
+    @Published var headerTextColor = HeaderTextColor.saved {
+        didSet {
+            UserDefaults.standard.set(headerTextColor.rawValue, forKey: headerTextColorKey)
+        }
     }
 
     /// Set when an app is picked: what's returned to Rust.
@@ -253,6 +258,33 @@ let logoYellow = Color(red: 253 / 255, green: 224 / 255, blue: 22 / 255)
 
 private let headerColorKey = "AppPickerHeaderColor"
 private let hideHeaderLogoKey = "AppPickerHideHeaderLogo"
+private let headerTextColorKey = "AppPickerHeaderTextColor"
+
+/// The header text colors to choose from, for the version, name and About.
+enum HeaderTextColor: String, CaseIterable {
+    case yellow, white, gray, black, purple, orange, teal
+
+    static var saved: HeaderTextColor {
+        UserDefaults.standard.string(forKey: headerTextColorKey)
+            .flatMap(HeaderTextColor.init(rawValue:)) ?? .yellow
+    }
+
+    var color: Color {
+        switch self {
+        case .white: return .white
+        case .gray: return Color(white: 0.65)
+        case .yellow: return logoYellow
+        case .black: return .black
+        case .purple: return HeaderColor.purple.color
+        case .orange: return HeaderColor.orange.color
+        case .teal: return HeaderColor.teal.color
+        }
+    }
+
+    var name: String {
+        rawValue.capitalized
+    }
+}
 
 /// The header colors to choose from.
 enum HeaderColor: String, CaseIterable {
@@ -491,10 +523,9 @@ struct Header: View {
                 .place(layout.header)
             Text("v" + model.input.shortVersionText)
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(.white)
+                .foregroundColor(model.headerTextColor.color)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
-                .opacity(model.blackHeaderShown ? 0.65 : 1)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .place(CGRect(x: 16, y: content.minY, width: 60, height: content.height))
             // The logo, or the name, is centred, clear of the version and
@@ -507,11 +538,11 @@ struct Header: View {
             )
             if model.hideHeaderLogo {
                 Text("iDared 32bit")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(model.blackHeaderShown ? .white : logoYellow)
+                    .font(.system(size: 24, weight: .black))
+                    .fontWidth(.condensed)
+                    .foregroundColor(model.headerTextColor.color)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
-                    .opacity(model.blackHeaderShown ? 0.65 : 1)
                     .place(logoFrame)
             } else {
                 Image("AppPickerLogo")
@@ -525,7 +556,7 @@ struct Header: View {
                 HeaderButton(
                     title: "About",
                     symbol: "info",
-                    color: .white,
+                    color: model.headerTextColor.color,
                     fill: .clear,
                     action: {
                         model.copyrightPage = 0
@@ -533,8 +564,6 @@ struct Header: View {
                     }
                 )
             }
-            .grayscale(model.blackHeaderShown ? 1 : 0)
-            .opacity(model.blackHeaderShown ? 0.65 : 1)
             .frame(maxWidth: .infinity, alignment: .trailing)
             .place(CGRect(
                 x: content.maxX - side,
@@ -853,6 +882,7 @@ struct SettingsView: View {
                     NavigationLink {
                         page("Theme Options") {
                             headerColorSection
+                            headerTextColorSection
                             Section {
                                 Toggle("Hide Header Logo", isOn: $model.hideHeaderLogo)
                             } footer: {
@@ -901,31 +931,58 @@ struct SettingsView: View {
             // Seven fit across the narrowest iPhones at this size.
             HStack(spacing: 10) {
                 ForEach(HeaderColor.allCases, id: \.self) { choice in
-                    Button {
+                    swatch(choice.color, choice.name, selected: model.headerColor == choice) {
                         model.headerColor = choice
-                    } label: {
-                        Circle()
-                            .fill(choice.color)
-                            .frame(width: 34, height: 34)
-                            .overlay(Circle().stroke(Color.white.opacity(0.3), lineWidth: 1))
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.white, lineWidth: 2.5)
-                                    .padding(-4)
-                                    .opacity(model.headerColor == choice ? 1 : 0)
-                            )
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(choice.name)
                 }
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 6)
         } header: {
-            Text("App Picker Header Color")
+            Text("Header Background Color")
         } footer: {
             Text(model.headerColor.name)
         }
+    }
+
+    private var headerTextColorSection: some View {
+        Section {
+            HStack(spacing: 10) {
+                ForEach(HeaderTextColor.allCases, id: \.self) { choice in
+                    swatch(choice.color, choice.name, selected: model.headerTextColor == choice) {
+                        model.headerTextColor = choice
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+        } header: {
+            Text("Header Text Color")
+        } footer: {
+            Text(model.headerTextColor.name)
+        }
+    }
+
+    private func swatch(
+        _ color: Color,
+        _ name: String,
+        selected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Circle()
+                .fill(color)
+                .frame(width: 34, height: 34)
+                .overlay(Circle().stroke(Color.white.opacity(0.3), lineWidth: 1))
+                .overlay(
+                    Circle()
+                        .stroke(Color.white, lineWidth: 2.5)
+                        .padding(-4)
+                        .opacity(selected ? 1 : 0)
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(name)
     }
 
     @ViewBuilder
