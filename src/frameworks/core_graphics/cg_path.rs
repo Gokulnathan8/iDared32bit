@@ -13,7 +13,7 @@ use crate::objc::{objc_classes, ClassExports, HostObject};
 use crate::Environment;
 
 // Note: on iOS SDK side this type is defined as a pointer to an opaque struct
-pub(super) type CGMutablePathRef = CFTypeRef;
+pub type CGMutablePathRef = CFTypeRef;
 
 #[derive(Clone)]
 pub struct CGMutablePathHostObject {
@@ -130,6 +130,23 @@ pub fn CGPathAddLines(
         };
         add_element(env, path, type_, point);
     }
+}
+
+/// The points of a path made only of moves and lines, for keyframe
+/// animations. Panics on other elements, which aren't supported yet.
+pub fn path_points(env: &Environment, path: CGMutablePathRef) -> Vec<CGPoint> {
+    let host_obj = env.objc.borrow::<CGMutablePathHostObject>(path);
+    host_obj
+        .path_elements
+        .iter()
+        .map(|elem| {
+            assert!(matches!(
+                elem.r#type,
+                kCGPathElementMoveToPoint | kCGPathElementAddLineToPoint
+            ));
+            elem.points[0]
+        })
+        .collect()
 }
 
 pub const FUNCTIONS: FunctionExports = &[

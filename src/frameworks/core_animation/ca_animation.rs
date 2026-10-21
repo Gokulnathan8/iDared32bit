@@ -8,10 +8,12 @@
 use crate::dyld::{ConstantExports, HostConstant};
 use crate::frameworks::core_animation::ca_media_timing_function::kCAMediaTimingFunctionDefault;
 use crate::frameworks::core_foundation::time::CFTimeInterval;
+use crate::frameworks::core_graphics::cg_path::{CGMutablePathRef, CGPathRelease, CGPathRetain};
 use crate::frameworks::foundation::ns_string::{get_static_str, to_rust_string};
+use crate::frameworks::foundation::NSUInteger;
 use crate::objc::{
-    autorelease, id, msg, nil, objc_classes, release, retain, todo_objc_setter, ClassExports,
-    HostObject, NSZonePtr,
+    autorelease, id, msg, nil, objc_classes, release, retain, todo_objc_setter, Class,
+    ClassExports, HostObject, NSZonePtr,
 };
 use crate::Environment;
 use crate::{impl_HostObject_with_superclass, msg_class, msg_super};
@@ -28,7 +30,48 @@ pub const kCAFillModeBoth: &str = "both";
 pub const kCAFillModeForwards: &str = "forwards";
 pub const kCAFillModeRemoved: &str = "removed";
 
+pub type CAAnimationCalculationMode = id; // NSString*
+pub const kCAAnimationLinear: &str = "linear";
+pub const kCAAnimationDiscrete: &str = "discrete";
+pub const kCAAnimationPaced: &str = "paced";
+pub const kCAAnimationCubic: &str = "cubic";
+pub const kCAAnimationCubicPaced: &str = "cubicPaced";
+
+pub type CAAnimationRotationMode = id; // NSString*
+const kCAAnimationRotateAuto: &str = "auto";
+const kCAAnimationRotateAutoReverse: &str = "autoReverse";
+
 pub const CONSTANTS: ConstantExports = &[
+    // `CAAnimationCalculationMode` values.
+    (
+        "_kCAAnimationLinear",
+        HostConstant::NSString(kCAAnimationLinear),
+    ),
+    (
+        "_kCAAnimationDiscrete",
+        HostConstant::NSString(kCAAnimationDiscrete),
+    ),
+    (
+        "_kCAAnimationPaced",
+        HostConstant::NSString(kCAAnimationPaced),
+    ),
+    (
+        "_kCAAnimationCubic",
+        HostConstant::NSString(kCAAnimationCubic),
+    ),
+    (
+        "_kCAAnimationCubicPaced",
+        HostConstant::NSString(kCAAnimationCubicPaced),
+    ),
+    // `CAAnimationRotationMode` values.
+    (
+        "_kCAAnimationRotateAuto",
+        HostConstant::NSString(kCAAnimationRotateAuto),
+    ),
+    (
+        "_kCAAnimationRotateAutoReverse",
+        HostConstant::NSString(kCAAnimationRotateAutoReverse),
+    ),
     // `CATransitionType` values.
     (
         "_kCATransitionFade",
@@ -106,6 +149,86 @@ struct CABasicAnimationHostObject {
     by_value: id,
 }
 impl_HostObject_with_superclass!(CABasicAnimationHostObject);
+
+struct CAKeyframeAnimationHostObject {
+    superclass: CAPropertyAnimationHostObject,
+    values: id,           // NSArray*
+    key_times: id,        // NSArray<NSNumber*>*
+    timing_functions: id, // NSArray<CAMediaTimingFunction*>*
+    path: CGMutablePathRef,
+    calculation_mode: &'static str,
+    rotation_mode: id, // NSString*
+}
+impl_HostObject_with_superclass!(CAKeyframeAnimationHostObject);
+impl Default for CAKeyframeAnimationHostObject {
+    fn default() -> Self {
+        Self {
+            superclass: Default::default(),
+            values: nil,
+            key_times: nil,
+            timing_functions: nil,
+            path: nil,
+            calculation_mode: kCAAnimationLinear,
+            rotation_mode: nil,
+        }
+    }
+}
+
+/// What a keyframe animation animates between, for [super::animation].
+pub struct Keyframes {
+    /// `id`s of the values, if there's no path.
+    pub values: Vec<id>,
+    /// The path, which replaces `values` when set.
+    pub path: CGMutablePathRef,
+    pub key_times: Option<Vec<f32>>,
+    /// `CAMediaTimingFunction*`s, one per segment.
+    pub timing_functions: Vec<id>,
+    pub calculation_mode: &'static str,
+}
+
+/// The keyframes of an animation, or [None] if it's not a keyframe one.
+pub fn get_keyframes(env: &mut Environment, animation: id) -> Option<Keyframes> {
+    let class = env
+        .objc
+        .get_known_class("CAKeyframeAnimation", &mut env.mem);
+    let animation_class: Class = msg![env; animation class];
+    if !env.objc.class_is_subclass_of(animation_class, class) {
+        return None;
+    }
+    let &CAKeyframeAnimationHostObject {
+        values,
+        key_times,
+        timing_functions,
+        path,
+        calculation_mode,
+        ..
+    } = env.objc.borrow(animation);
+    let values = array_to_vec(env, values);
+    let key_times = (key_times != nil).then(|| {
+        array_to_vec(env, key_times)
+            .into_iter()
+            .map(|time| msg![env; time floatValue])
+            .collect()
+    });
+    let timing_functions = array_to_vec(env, timing_functions);
+    Some(Keyframes {
+        values,
+        path,
+        key_times,
+        timing_functions,
+        calculation_mode,
+    })
+}
+
+fn array_to_vec(env: &mut Environment, array: id) -> Vec<id> {
+    if array == nil {
+        return Vec::new();
+    }
+    let count: NSUInteger = msg![env; array count];
+    (0..count)
+        .map(|i| msg![env; array objectAtIndex:i])
+        .collect()
+}
 
 pub const CLASSES: ClassExports = objc_classes! {
 
@@ -307,6 +430,110 @@ pub const CLASSES: ClassExports = objc_classes! {
         release(env, to_value);
     }
 
+    msg_super![env; this dealloc]
+}
+
+@end
+
+
+@implementation CAKeyframeAnimation: CAPropertyAnimation
+
++ (id)allocWithZone:(NSZonePtr)_zone {
+    let host_object = Box::<CAKeyframeAnimationHostObject>::default();
+    env.objc.alloc_object(this, host_object, &mut env.mem)
+}
+
+- (id)init {
+    let this: id = msg_super![env; this init];
+    // Unlike for UIView animations, no timing function means linear pacing.
+    () = msg![env; this setTimingFunction:nil];
+    this
+}
+
+- (())setValues:(id)values { // NSArray*
+    let values: id = msg![env; values copy];
+    let host_obj = env.objc.borrow_mut::<CAKeyframeAnimationHostObject>(this);
+    let old = std::mem::replace(&mut host_obj.values, values);
+    release(env, old);
+}
+- (id)values {
+    env.objc.borrow::<CAKeyframeAnimationHostObject>(this).values
+}
+
+- (())setKeyTimes:(id)key_times { // NSArray<NSNumber*>*
+    let key_times: id = msg![env; key_times copy];
+    let host_obj = env.objc.borrow_mut::<CAKeyframeAnimationHostObject>(this);
+    let old = std::mem::replace(&mut host_obj.key_times, key_times);
+    release(env, old);
+}
+- (id)keyTimes {
+    env.objc.borrow::<CAKeyframeAnimationHostObject>(this).key_times
+}
+
+- (())setTimingFunctions:(id)functions { // NSArray<CAMediaTimingFunction*>*
+    let functions: id = msg![env; functions copy];
+    let host_obj = env.objc.borrow_mut::<CAKeyframeAnimationHostObject>(this);
+    let old = std::mem::replace(&mut host_obj.timing_functions, functions);
+    release(env, old);
+}
+- (id)timingFunctions {
+    env.objc.borrow::<CAKeyframeAnimationHostObject>(this).timing_functions
+}
+
+- (())setPath:(CGMutablePathRef)path {
+    CGPathRetain(env, path);
+    let host_obj = env.objc.borrow_mut::<CAKeyframeAnimationHostObject>(this);
+    let old = std::mem::replace(&mut host_obj.path, path);
+    CGPathRelease(env, old);
+}
+- (CGMutablePathRef)path {
+    env.objc.borrow::<CAKeyframeAnimationHostObject>(this).path
+}
+
+- (())setCalculationMode:(CAAnimationCalculationMode)mode {
+    let mode_str = to_rust_string(env, mode);
+    let mode_str = match &*mode_str {
+        kCAAnimationLinear => kCAAnimationLinear,
+        kCAAnimationDiscrete => kCAAnimationDiscrete,
+        kCAAnimationPaced => kCAAnimationPaced,
+        kCAAnimationCubic => kCAAnimationCubic,
+        kCAAnimationCubicPaced => kCAAnimationCubicPaced,
+        _ => panic!("Unknown calculation mode \"{}\"", mode_str),
+    };
+    env.objc.borrow_mut::<CAKeyframeAnimationHostObject>(this).calculation_mode = mode_str;
+}
+- (CAAnimationCalculationMode)calculationMode {
+    let mode = env.objc.borrow::<CAKeyframeAnimationHostObject>(this).calculation_mode;
+    get_static_str(env, mode)
+}
+
+- (())setRotationMode:(CAAnimationRotationMode)mode {
+    if mode != nil {
+        log!("TODO: CAKeyframeAnimation rotationMode {:?} is not applied", to_rust_string(env, mode));
+    }
+    let mode: id = msg![env; mode copy];
+    let host_obj = env.objc.borrow_mut::<CAKeyframeAnimationHostObject>(this);
+    let old = std::mem::replace(&mut host_obj.rotation_mode, mode);
+    release(env, old);
+}
+- (CAAnimationRotationMode)rotationMode {
+    env.objc.borrow::<CAKeyframeAnimationHostObject>(this).rotation_mode
+}
+
+- (())dealloc {
+    let &CAKeyframeAnimationHostObject {
+        values,
+        key_times,
+        timing_functions,
+        path,
+        rotation_mode,
+        ..
+    } = env.objc.borrow(this);
+    release(env, values);
+    release(env, key_times);
+    release(env, timing_functions);
+    CGPathRelease(env, path);
+    release(env, rotation_mode);
     msg_super![env; this dealloc]
 }
 

@@ -19,13 +19,16 @@
 use std::ops::Sub;
 
 use crate::frameworks::core_animation::ca_animation::{
-    get_animation_start_time, kCAFillModeBackwards, kCAFillModeBoth, kCAFillModeForwards,
-    CAMediaTimingFillMode,
+    get_animation_start_time, get_keyframes, kCAAnimationCubic, kCAAnimationCubicPaced,
+    kCAAnimationDiscrete, kCAAnimationPaced, kCAFillModeBackwards, kCAFillModeBoth,
+    kCAFillModeForwards, CAMediaTimingFillMode, Keyframes,
 };
 use crate::frameworks::core_animation::ca_layer::remove_anonymous_animation;
 use crate::frameworks::core_animation::{ca_layer::CALayerHostObject, CACurrentMediaTime};
 use crate::frameworks::core_foundation::time::CFTimeInterval;
 use crate::frameworks::core_graphics::cg_color::CGColorHostObject;
+use crate::frameworks::core_graphics::cg_path::path_points;
+use crate::frameworks::core_graphics::{CGPoint, CGRect, CGSize};
 use crate::frameworks::foundation::ns_string::{from_rust_string, to_rust_string};
 use crate::objc::{id, msg, nil, release, retain};
 use crate::Environment;
@@ -110,27 +113,8 @@ impl State {
                 as f32)
                 .min(effective_repeat_count);
 
-            let mut progress = current_repeat.fract();
-
             let autoreverses: bool = msg![env; animation autoreverses];
-            if autoreverses {
-                // From the docs:
-                // Setting the repeat count to a whole number (such as 1.0) for
-                // an autoreversing animation causes the animation to stop on
-                // its starting value.
-                // Adding an extra half step (such as a repeat count of 1.5)
-                // causes the animation to stop on its end value
-                progress = ((progress * 2.0 - 1.0).abs() - 1.0).abs();
-            }
-
-            let timing_function: id = msg![env; animation timingFunction];
-            let mut interpolation_amount: f32 = msg![env; timing_function _solveForInput: progress];
-            // Each repeat of a cumulative animation carries on from where the
-            // previous one ended.
-            let cumulative: bool = msg![env; animation isCumulative];
-            if cumulative {
-                interpolation_amount += current_repeat.floor();
-            }
+            let progress = repeat_progress(current_repeat, effective_repeat_count, autoreverses);
 
             if current_repeat >= effective_repeat_count {
                 let removed_on_completion: bool = msg![env; animation isRemovedOnCompletion];
@@ -146,128 +130,13 @@ impl State {
                 }
             }
 
-            // Assuming all animations here are CABasicAnimation
-            // TODO: Handle other types of animations
-
-            let from_value: id = msg![env; animation fromValue];
-            let to_value: id = msg![env; animation toValue];
-            let by_value: id = msg![env; animation byValue];
-
-            // Update values only in the presentation layer
-            let key_path: id = msg![env; animation keyPath];
-            let key_path = to_rust_string(env, key_path);
-            // Only these properties are animatable
-            // TODO: Implement for all properties
-            match &*key_path {
-                "anchorPoint" => {
-                    let from_value =
-                        id_as_option(from_value).map(|obj| msg![env; obj CGPointValue]);
-                    let to_value = id_as_option(to_value).map(|obj| msg![env; obj CGPointValue]);
-                    let by_value = id_as_option(by_value).map(|obj| msg![env; obj CGPointValue]);
-                    let (from_value, by_value) = get_from_and_by_values(
-                        Some(presentation.anchor_point),
-                        from_value,
-                        to_value,
-                        by_value,
-                    );
-                    presentation.anchor_point = from_value + by_value * interpolation_amount;
-                }
-                "backgroundColor" => {
-                    let from_value = id_as_option(from_value)
-                        .map(|obj| *env.objc.borrow::<CGColorHostObject>(obj));
-                    let to_value = id_as_option(to_value)
-                        .map(|obj| *env.objc.borrow::<CGColorHostObject>(obj));
-                    let by_value = id_as_option(by_value)
-                        .map(|obj| *env.objc.borrow::<CGColorHostObject>(obj));
-                    let (from_value, by_value) = get_from_and_by_values(
-                        presentation.background_color,
-                        from_value,
-                        to_value,
-                        by_value,
-                    );
-                    presentation.background_color =
-                        Some(from_value + by_value * interpolation_amount)
-                }
-                "bounds" => {
-                    let from_value = id_as_option(from_value).map(|obj| msg![env; obj CGRectValue]);
-                    let to_value = id_as_option(to_value).map(|obj| msg![env; obj CGRectValue]);
-                    let by_value = id_as_option(by_value).map(|obj| msg![env; obj CGRectValue]);
-                    let (from_value, by_value) = get_from_and_by_values(
-                        Some(presentation.bounds),
-                        from_value,
-                        to_value,
-                        by_value,
-                    );
-                    presentation.bounds = from_value + by_value * interpolation_amount;
-                }
-                "cornerRadius" => {
-                    let from_value = id_as_option(from_value).map(|obj| msg![env; obj floatValue]);
-                    let to_value = id_as_option(to_value).map(|obj| msg![env; obj floatValue]);
-                    let by_value = id_as_option(by_value).map(|obj| msg![env; obj floatValue]);
-                    let (from_value, by_value) = get_from_and_by_values(
-                        Some(presentation.corner_radius),
-                        from_value,
-                        to_value,
-                        by_value,
-                    );
-                    presentation.corner_radius = from_value + by_value * interpolation_amount;
-                }
-                "hidden" => {
-                    let from_value = id_as_option(from_value)
-                        .map(|obj| msg![env; obj boolValue])
-                        .map(|val: bool| val as i32 as f32);
-                    let to_value = id_as_option(to_value)
-                        .map(|obj| msg![env; obj boolValue])
-                        .map(|val: bool| val as i32 as f32);
-                    let by_value = id_as_option(by_value)
-                        .map(|obj| msg![env; obj boolValue])
-                        .map(|val: bool| val as i32 as f32);
-                    let (from_value, by_value) = get_from_and_by_values(
-                        Some(presentation.hidden as i32 as f32),
-                        from_value,
-                        to_value,
-                        by_value,
-                    );
-                    presentation.hidden = (from_value + by_value * interpolation_amount) > 0.5;
-                }
-                "opacity" => {
-                    let from_value = id_as_option(from_value).map(|obj| msg![env; obj floatValue]);
-                    let to_value = id_as_option(to_value).map(|obj| msg![env; obj floatValue]);
-                    let by_value = id_as_option(by_value).map(|obj| msg![env; obj floatValue]);
-                    let (from_value, by_value) = get_from_and_by_values(
-                        Some(presentation.opacity),
-                        from_value,
-                        to_value,
-                        by_value,
-                    );
-                    presentation.opacity = from_value + by_value * interpolation_amount;
-                }
-                "position" => {
-                    let from_value =
-                        id_as_option(from_value).map(|obj| msg![env; obj CGPointValue]);
-                    let to_value = id_as_option(to_value).map(|obj| msg![env; obj CGPointValue]);
-                    let by_value = id_as_option(by_value).map(|obj| msg![env; obj CGPointValue]);
-                    let (from_value, by_value) = get_from_and_by_values(
-                        Some(presentation.position),
-                        from_value,
-                        to_value,
-                        by_value,
-                    );
-                    presentation.position = from_value + by_value * interpolation_amount;
-                }
-                "transform.rotation.z" => {
-                    let current = presentation.affine_transform;
-                    let current_angle = current.b.atan2(current.a);
-                    let from_value = id_as_option(from_value).map(|obj| msg![env; obj floatValue]);
-                    let to_value = id_as_option(to_value).map(|obj| msg![env; obj floatValue]);
-                    let by_value = id_as_option(by_value).map(|obj| msg![env; obj floatValue]);
-                    let (from_value, by_value) =
-                        get_from_and_by_values(Some(current_angle), from_value, to_value, by_value);
-                    let angle = from_value + by_value * interpolation_amount;
-                    presentation.affine_transform = current.rotate(angle - current_angle);
-                }
-                _ => panic!("Attempted to animate on key {}", key_path),
-            }
+            apply_animation(
+                env,
+                &mut presentation,
+                animation,
+                progress,
+                current_repeat.floor(),
+            );
         }
 
         presentation
@@ -304,6 +173,169 @@ impl State {
             release(env, layer);
             release(env, animation);
         }
+    }
+}
+
+/// Set an animation's value at `progress` (0 to 1, before its timing
+/// function) in the presentation layer. `repeats_done` is for cumulative
+/// animations, which carry on from where the previous repeat ended.
+fn apply_animation(
+    env: &mut Environment,
+    presentation: &mut CALayerHostObject,
+    animation: id,
+    progress: f32,
+    repeats_done: f32,
+) {
+    let timing_function: id = msg![env; animation timingFunction];
+    let amount = if timing_function == nil {
+        progress
+    } else {
+        msg![env; timing_function _solveForInput: progress]
+    };
+
+    if let Some(keyframes) = get_keyframes(env, animation) {
+        let key_path: id = msg![env; animation keyPath];
+        let key_path = to_rust_string(env, key_path).into_owned();
+        apply_keyframes(env, presentation, &key_path, keyframes, amount);
+        return;
+    }
+
+    // Otherwise, it's a CABasicAnimation
+    let mut interpolation_amount = amount;
+    let cumulative: bool = msg![env; animation isCumulative];
+    if cumulative {
+        interpolation_amount += repeats_done;
+    }
+
+    let from_value: id = msg![env; animation fromValue];
+    let to_value: id = msg![env; animation toValue];
+    let by_value: id = msg![env; animation byValue];
+
+    // Update values only in the presentation layer
+    let key_path: id = msg![env; animation keyPath];
+    let key_path = to_rust_string(env, key_path);
+    // Only these properties are animatable
+    // TODO: Implement for all properties
+    match &*key_path {
+        "anchorPoint" => {
+            let from_value = id_as_option(from_value).map(|obj| msg![env; obj CGPointValue]);
+            let to_value = id_as_option(to_value).map(|obj| msg![env; obj CGPointValue]);
+            let by_value = id_as_option(by_value).map(|obj| msg![env; obj CGPointValue]);
+            let (from_value, by_value) = get_from_and_by_values(
+                Some(presentation.anchor_point),
+                from_value,
+                to_value,
+                by_value,
+            );
+            presentation.anchor_point = from_value + by_value * interpolation_amount;
+        }
+        "backgroundColor" => {
+            let from_value =
+                id_as_option(from_value).map(|obj| *env.objc.borrow::<CGColorHostObject>(obj));
+            let to_value =
+                id_as_option(to_value).map(|obj| *env.objc.borrow::<CGColorHostObject>(obj));
+            let by_value =
+                id_as_option(by_value).map(|obj| *env.objc.borrow::<CGColorHostObject>(obj));
+            let (from_value, by_value) = get_from_and_by_values(
+                presentation.background_color,
+                from_value,
+                to_value,
+                by_value,
+            );
+            presentation.background_color = Some(from_value + by_value * interpolation_amount)
+        }
+        "bounds" => {
+            let from_value = id_as_option(from_value).map(|obj| msg![env; obj CGRectValue]);
+            let to_value = id_as_option(to_value).map(|obj| msg![env; obj CGRectValue]);
+            let by_value = id_as_option(by_value).map(|obj| msg![env; obj CGRectValue]);
+            let (from_value, by_value) =
+                get_from_and_by_values(Some(presentation.bounds), from_value, to_value, by_value);
+            presentation.bounds = from_value + by_value * interpolation_amount;
+        }
+        "cornerRadius" => {
+            let from_value = id_as_option(from_value).map(|obj| msg![env; obj floatValue]);
+            let to_value = id_as_option(to_value).map(|obj| msg![env; obj floatValue]);
+            let by_value = id_as_option(by_value).map(|obj| msg![env; obj floatValue]);
+            let (from_value, by_value) = get_from_and_by_values(
+                Some(presentation.corner_radius),
+                from_value,
+                to_value,
+                by_value,
+            );
+            presentation.corner_radius = from_value + by_value * interpolation_amount;
+        }
+        "hidden" => {
+            let from_value = id_as_option(from_value)
+                .map(|obj| msg![env; obj boolValue])
+                .map(|val: bool| val as i32 as f32);
+            let to_value = id_as_option(to_value)
+                .map(|obj| msg![env; obj boolValue])
+                .map(|val: bool| val as i32 as f32);
+            let by_value = id_as_option(by_value)
+                .map(|obj| msg![env; obj boolValue])
+                .map(|val: bool| val as i32 as f32);
+            let (from_value, by_value) = get_from_and_by_values(
+                Some(presentation.hidden as i32 as f32),
+                from_value,
+                to_value,
+                by_value,
+            );
+            presentation.hidden = (from_value + by_value * interpolation_amount) > 0.5;
+        }
+        "opacity" => {
+            let from_value = id_as_option(from_value).map(|obj| msg![env; obj floatValue]);
+            let to_value = id_as_option(to_value).map(|obj| msg![env; obj floatValue]);
+            let by_value = id_as_option(by_value).map(|obj| msg![env; obj floatValue]);
+            let (from_value, by_value) =
+                get_from_and_by_values(Some(presentation.opacity), from_value, to_value, by_value);
+            presentation.opacity = from_value + by_value * interpolation_amount;
+        }
+        "position" => {
+            let from_value = id_as_option(from_value).map(|obj| msg![env; obj CGPointValue]);
+            let to_value = id_as_option(to_value).map(|obj| msg![env; obj CGPointValue]);
+            let by_value = id_as_option(by_value).map(|obj| msg![env; obj CGPointValue]);
+            let (from_value, by_value) =
+                get_from_and_by_values(Some(presentation.position), from_value, to_value, by_value);
+            presentation.position = from_value + by_value * interpolation_amount;
+        }
+        "transform.rotation.z" => {
+            let current = presentation.affine_transform;
+            let current_angle = current.b.atan2(current.a);
+            let from_value = id_as_option(from_value).map(|obj| msg![env; obj floatValue]);
+            let to_value = id_as_option(to_value).map(|obj| msg![env; obj floatValue]);
+            let by_value = id_as_option(by_value).map(|obj| msg![env; obj floatValue]);
+            let (from_value, by_value) =
+                get_from_and_by_values(Some(current_angle), from_value, to_value, by_value);
+            let angle = from_value + by_value * interpolation_amount;
+            presentation.affine_transform = current.rotate(angle - current_angle);
+        }
+        _ => panic!("Attempted to animate on key {}", key_path),
+    }
+}
+
+/// Progress through the current repeat (0 to 1), from the number of repeats
+/// done so far (with a fraction) and the number to do.
+fn repeat_progress(current_repeat: f32, repeat_count: f32, autoreverses: bool) -> f32 {
+    // At the very end, show the end of the last repeat, not the start of
+    // another one.
+    let progress = if current_repeat >= repeat_count
+        && current_repeat.fract() == 0.0
+        && current_repeat > 0.0
+    {
+        1.0
+    } else {
+        current_repeat.fract()
+    };
+    if autoreverses {
+        // From the docs:
+        // Setting the repeat count to a whole number (such as 1.0) for
+        // an autoreversing animation causes the animation to stop on
+        // its starting value.
+        // Adding an extra half step (such as a repeat count of 1.5)
+        // causes the animation to stop on its end value
+        ((progress * 2.0 - 1.0).abs() - 1.0).abs()
+    } else {
+        progress
     }
 }
 
@@ -349,5 +381,206 @@ fn id_as_option(value: id) -> Option<id> {
         None
     } else {
         Some(value)
+    }
+}
+
+/// A keyframe value as its components: 1 for numbers, 2 for points and 4
+/// for rectangles, so they can be interpolated and measured the same way.
+type Components = Vec<f32>;
+
+fn keyframe_components(env: &mut Environment, key_path: &str, value: id) -> Components {
+    match key_path {
+        "opacity"
+        | "cornerRadius"
+        | "transform.rotation"
+        | "transform.rotation.z"
+        | "transform.scale"
+        | "transform.scale.x"
+        | "transform.scale.y" => {
+            let value: f32 = msg![env; value floatValue];
+            vec![value]
+        }
+        "position" | "anchorPoint" => {
+            let CGPoint { x, y } = msg![env; value CGPointValue];
+            vec![x, y]
+        }
+        "bounds" => {
+            let CGRect {
+                origin: CGPoint { x, y },
+                size: CGSize { width, height },
+            } = msg![env; value CGRectValue];
+            vec![x, y, width, height]
+        }
+        _ => panic!("Attempted keyframe animation on key {}", key_path),
+    }
+}
+
+fn distance(a: &Components, b: &Components) -> f32 {
+    a.iter()
+        .zip(b)
+        .map(|(a, b)| (a - b) * (a - b))
+        .sum::<f32>()
+        .sqrt()
+}
+
+/// Set a keyframe animation's value at `time` (0 to 1) in the presentation
+/// layer, following `calculationMode`, `keyTimes` and `timingFunctions`.
+fn apply_keyframes(
+    env: &mut Environment,
+    presentation: &mut CALayerHostObject,
+    key_path: &str,
+    keyframes: Keyframes,
+    time: f32,
+) {
+    let values: Vec<Components> = if keyframes.path != nil {
+        assert!(
+            matches!(key_path, "position" | "anchorPoint"),
+            "Keyframe path for key {}",
+            key_path
+        );
+        path_points(env, keyframes.path)
+            .into_iter()
+            .map(|CGPoint { x, y }| vec![x, y])
+            .collect()
+    } else {
+        keyframes
+            .values
+            .iter()
+            .map(|&value| keyframe_components(env, key_path, value))
+            .collect()
+    };
+    let n = values.len();
+    if n == 0 {
+        return;
+    }
+
+    let mut mode = keyframes.calculation_mode;
+    if mode == kCAAnimationCubic || mode == kCAAnimationCubicPaced {
+        log_once!("TODO: cubic keyframe animations are interpolated linearly");
+        if mode == kCAAnimationCubicPaced {
+            mode = kCAAnimationPaced;
+        }
+    }
+    let paced = mode == kCAAnimationPaced;
+    let discrete = mode == kCAAnimationDiscrete;
+
+    // When each keyframe is reached, from 0 to 1.
+    let even = |count: usize| -> Vec<f32> {
+        (0..n)
+            .map(|i| {
+                if count == 0 {
+                    0.0
+                } else {
+                    i as f32 / count as f32
+                }
+            })
+            .collect()
+    };
+    let key_times = if paced {
+        // Evenly paced: each segment takes time in proportion to its length.
+        let mut total = 0.0;
+        let mut times = vec![0.0];
+        for pair in values.windows(2) {
+            total += distance(&pair[0], &pair[1]);
+            times.push(total);
+        }
+        if total > 0.0 {
+            times.iter().map(|t| t / total).collect()
+        } else {
+            even(n - 1)
+        }
+    } else {
+        // Discrete animations have one more key time than values.
+        let expected = if discrete { n + 1 } else { n };
+        match keyframes.key_times {
+            Some(times) if times.len() == expected => times,
+            Some(times) => {
+                log!(
+                    "Warning: keyframe animation has {} key times for {} values, spacing them evenly",
+                    times.len(),
+                    n
+                );
+                even(if discrete { n } else { n - 1 })
+            }
+            None => even(if discrete { n } else { n - 1 }),
+        }
+    };
+
+    let index = key_times[..n]
+        .iter()
+        .rposition(|&key_time| key_time <= time)
+        .unwrap_or(0);
+    let value = if discrete || index + 1 >= n {
+        values[index].clone()
+    } else {
+        let span = key_times[index + 1] - key_times[index];
+        let mut amount = if span > 0.0 {
+            ((time - key_times[index]) / span).clamp(0.0, 1.0)
+        } else {
+            1.0
+        };
+        if !paced {
+            if let Some(&function) = keyframes.timing_functions.get(index) {
+                amount = msg![env; function _solveForInput: amount];
+            }
+        }
+        values[index]
+            .iter()
+            .zip(&values[index + 1])
+            .map(|(a, b)| a + (b - a) * amount)
+            .collect()
+    };
+
+    match key_path {
+        "opacity" => presentation.opacity = value[0],
+        "cornerRadius" => presentation.corner_radius = value[0],
+        "position" => {
+            presentation.position = CGPoint {
+                x: value[0],
+                y: value[1],
+            }
+        }
+        "anchorPoint" => {
+            presentation.anchor_point = CGPoint {
+                x: value[0],
+                y: value[1],
+            }
+        }
+        "bounds" => {
+            presentation.bounds = CGRect {
+                origin: CGPoint {
+                    x: value[0],
+                    y: value[1],
+                },
+                size: CGSize {
+                    width: value[2],
+                    height: value[3],
+                },
+            }
+        }
+        "transform.rotation" | "transform.rotation.z" => {
+            let current = presentation.affine_transform;
+            let current_angle = current.b.atan2(current.a);
+            presentation.affine_transform = current.rotate(value[0] - current_angle);
+        }
+        "transform.scale" | "transform.scale.x" | "transform.scale.y" => {
+            // Replace the scale, keeping the rotation and translation.
+            let t = &mut presentation.affine_transform;
+            let angle = t.b.atan2(t.a);
+            let (sin, cos) = angle.sin_cos();
+            let mut scale_x = t.a.hypot(t.b);
+            let mut scale_y = t.c.hypot(t.d);
+            if key_path != "transform.scale.y" {
+                scale_x = value[0];
+            }
+            if key_path != "transform.scale.x" {
+                scale_y = value[0];
+            }
+            t.a = cos * scale_x;
+            t.b = sin * scale_x;
+            t.c = -sin * scale_y;
+            t.d = cos * scale_y;
+        }
+        _ => unreachable!(),
     }
 }
