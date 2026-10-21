@@ -10,6 +10,7 @@ import Combine
 import CoreImage
 import PhotosUI
 import SwiftUI
+import UniformTypeIdentifiers
 import UIKit
 
 // MARK: - Entry point
@@ -48,6 +49,43 @@ struct PickerInput: Decodable {
     let quickOptions: [QuickOption]
     /// Why the last game couldn't start, if it couldn't.
     let startError: String?
+}
+
+/// Games opened with "Open in iDared 32bit", waiting for the picker.
+enum OpenedGames {
+    /// Only used on the main thread, where UIKit calls the hook below.
+    nonisolated(unsafe) static var pending: [URL] = []
+    static let notification = Notification.Name("IDaredOpenedGames")
+
+    static func take() -> [URL] {
+        defer { pending = [] }
+        return pending
+    }
+}
+
+/// Called from main() before SDL starts. SDL turns files opened in the app
+/// into drop events, which nothing reads, so this also gives them to the
+/// picker. The app opens them in place, so they aren't put in an Inbox.
+@_cdecl("idared_install_open_in_hook")
+public func idaredInstallOpenInHook() {
+    let selector = NSSelectorFromString("sendDropFileForURL:")
+    for name in ["SDLUIKitSceneDelegate", "SDLUIKitDelegate"] {
+        guard let delegateClass = NSClassFromString(name),
+              let method = class_getInstanceMethod(delegateClass, selector)
+        else {
+            continue
+        }
+        typealias Original = @convention(c) (AnyObject, Selector, NSURL) -> Void
+        let original = unsafeBitCast(method_getImplementation(method), to: Original.self)
+        let replacement: @convention(block) (AnyObject, NSURL) -> Void = { delegate, url in
+            if url.isFileURL {
+                OpenedGames.pending.append(url as URL)
+                NotificationCenter.default.post(name: OpenedGames.notification, object: nil)
+            }
+            original(delegate, selector, url)
+        }
+        method_setImplementation(method, imp_implementationWithBlock(replacement))
+    }
 }
 
 /// Called from Rust. Shows the picker until an app is picked, then returns
@@ -287,6 +325,148 @@ final class PickerModel: ObservableObject {
         return UIGraphicsImageRenderer(size: size, format: format).image { _ in
             photo.draw(in: CGRect(origin: .zero, size: size))
         }
+    }
+
+    @Published var showingImporter = false
+    /// Games to import that are already in Games, while asking what to do.
+    @Published var importConflicts: [String] = []
+    @Published var importError: String?
+    private var pendingImport: [(url: URL, move: Bool)] = []
+    /// Security-scoped URLs from the Files picker, accessed until copied.
+    private var accessedURLs: [URL] = []
+
+    private var gamesFolder: URL {
+        URL(fileURLWithPath: input.appsFolder)
+    }
+
+    /// Where iOS puts copies of games shared with the app, e.g. from Mail.
+    private var inboxFolder: URL {
+        gamesFolder.deletingLastPathComponent().appendingPathComponent("Inbox")
+    }
+
+    /// Imports .ipa files and .app folders picked in Files. A picked folder
+    /// that isn't a game imports the games inside it.
+    func importPicked(_ urls: [URL]) {
+        for url in urls where url.startAccessingSecurityScopedResource() {
+            accessedURLs.append(url)
+        }
+        importGames(urls.flatMap(Self.games(in:)).map { (url: $0, move: false) })
+    }
+
+    /// Imports games opened with "Open in iDared 32bit": copies of the
+    /// originals, and anything iOS put in the Inbox, which is moved.
+    func importSharedGames() {
+        // Not while another import is copying games.
+        guard pendingImport.isEmpty else {
+            return
+        }
+        let opened = OpenedGames.take().filter { Self.isGame($0) }
+        for url in opened where url.startAccessingSecurityScopedResource() {
+            accessedURLs.append(url)
+        }
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: inboxFolder.path)) ?? []
+        let inbox = names
+            .map { inboxFolder.appendingPathComponent($0) }
+            .filter { Self.isGame($0) }
+        let games = opened.map { (url: $0, move: false) } + inbox.map { (url: $0, move: true) }
+        guard !games.isEmpty else {
+            reloadIfGamesChanged()
+            return
+        }
+        importGames(games)
+    }
+
+    private static func isGame(_ url: URL) -> Bool {
+        ["ipa", "app"].contains(url.pathExtension.lowercased())
+    }
+
+    private static func games(in url: URL) -> [URL] {
+        if isGame(url) {
+            return [url]
+        }
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: url.path)) ?? []
+        return names.map { url.appendingPathComponent($0) }.filter(isGame)
+    }
+
+    private func importGames(_ games: [(url: URL, move: Bool)]) {
+        // A game shared from Games itself is already there.
+        let games = games.filter {
+            $0.url.deletingLastPathComponent().standardizedFileURL.path
+                != gamesFolder.standardizedFileURL.path
+        }
+        guard !games.isEmpty else {
+            stopAccessing()
+            importError = "There were no games (.ipa files or .app folders) to import."
+            return
+        }
+        pendingImport = games
+        let existing = games.map(\.url.lastPathComponent).filter { name in
+            FileManager.default.fileExists(atPath: gamesFolder.appendingPathComponent(name).path)
+        }
+        if existing.isEmpty {
+            finishImport(replacing: false)
+        } else {
+            importConflicts = existing
+        }
+    }
+
+    /// Copies (or moves) the pending games into Games, off the main thread,
+    /// then shows the picker again with them.
+    func finishImport(replacing: Bool) {
+        let games = pendingImport
+        let folder = gamesFolder
+        Task.detached {
+            let manager = FileManager.default
+            var failures: [String] = []
+            try? manager.createDirectory(at: folder, withIntermediateDirectories: true)
+            for (url, move) in games {
+                let destination = folder.appendingPathComponent(url.lastPathComponent)
+                do {
+                    if manager.fileExists(atPath: destination.path) {
+                        guard replacing else {
+                            if move {
+                                try? manager.removeItem(at: url)
+                            }
+                            continue
+                        }
+                        try manager.removeItem(at: destination)
+                    }
+                    if move {
+                        try manager.moveItem(at: url, to: destination)
+                    } else {
+                        try manager.copyItem(at: url, to: destination)
+                    }
+                } catch {
+                    failures.append("\(url.lastPathComponent): \(error.localizedDescription)")
+                }
+            }
+            // A copy: the loop above is done changing it.
+            await MainActor.run { [failures] in
+                self.pendingImport = []
+                self.stopAccessing()
+                if failures.isEmpty {
+                    self.reloadIfGamesChanged()
+                } else {
+                    self.importError = failures.joined(separator: "\n")
+                }
+            }
+        }
+    }
+
+    func cancelImport() {
+        // Shared games that weren't imported aren't wanted in the Inbox.
+        for (url, move) in pendingImport where move {
+            try? FileManager.default.removeItem(at: url)
+        }
+        pendingImport = []
+        stopAccessing()
+    }
+
+    private func stopAccessing() {
+        for url in accessedURLs {
+            url.stopAccessingSecurityScopedResource()
+        }
+        accessedURLs = []
     }
 
     /// What was in the Games folder when the picker was shown.
@@ -571,12 +751,58 @@ struct PickerView: View {
     var body: some View {
         content
             .statusBarHidden(false)
-            // Back from File Manager (or anywhere else).
+            // Back from File Manager (or anywhere else), maybe with games
+            // shared with "Open in iDared 32bit".
             .onReceive(
                 NotificationCenter.default
-                    .publisher(for: UIApplication.willEnterForegroundNotification)
+                    .publisher(for: UIApplication.didBecomeActiveNotification)
             ) { _ in
-                model.reloadIfGamesChanged()
+                model.importSharedGames()
+            }
+            .onReceive(
+                NotificationCenter.default.publisher(for: OpenedGames.notification)
+            ) { _ in
+                model.importSharedGames()
+            }
+            .onAppear {
+                model.importSharedGames()
+            }
+            .confirmationDialog(
+                importConflictTitle,
+                isPresented: Binding(
+                    get: { !model.importConflicts.isEmpty },
+                    set: { if !$0 { model.importConflicts = [] } }
+                ),
+                titleVisibility: .visible
+            ) {
+                Button("Replace") {
+                    model.importConflicts = []
+                    model.finishImport(replacing: true)
+                }
+                Button("Keep Existing") {
+                    model.importConflicts = []
+                    model.finishImport(replacing: false)
+                }
+                Button("Cancel", role: .cancel) {
+                    model.importConflicts = []
+                    model.cancelImport()
+                }
+            } message: {
+                Text(model.importConflicts.joined(separator: "\n"))
+            }
+            .alert(
+                "Couldn't Import",
+                isPresented: Binding(
+                    get: { model.importError != nil },
+                    set: { if !$0 { model.importError = nil } }
+                )
+            ) {
+                // Show any games that did import.
+                Button("OK", role: .cancel) {
+                    model.reloadIfGamesChanged()
+                }
+            } message: {
+                Text(model.importError ?? "")
             }
             .sheet(isPresented: $model.showingSettings) {
                 SettingsView(model: model)
@@ -586,6 +812,12 @@ struct PickerView: View {
             } message: {
                 Text(model.input.startError ?? "")
             }
+    }
+
+    private var importConflictTitle: String {
+        model.importConflicts.count == 1
+            ? "This game is already in Games"
+            : "These games are already in Games"
     }
 
     private var content: some View {
@@ -627,12 +859,25 @@ struct PickerView: View {
                 }
                 BrandingLabels(branding: model.input.branding, size: layout.size)
                 if let error = model.input.error {
-                    Text(error)
-                        .font(.system(size: 17))
-                        .foregroundColor(.white)
-                        .shadow(color: .black.opacity(0.6), radius: 2, y: 1)
-                        .multilineTextAlignment(.center)
-                        .place(layout.gridFrame.insetBy(dx: 10, dy: 10))
+                    VStack(spacing: 20) {
+                        Text(error)
+                            .font(.system(size: 17))
+                            .foregroundColor(.white)
+                            .shadow(color: .black.opacity(0.6), radius: 2, y: 1)
+                            .multilineTextAlignment(.center)
+                        Button {
+                            model.showingImporter = true
+                        } label: {
+                            Label("Import Games", systemImage: "square.and.arrow.down")
+                                .font(.system(size: 17, weight: .semibold))
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 12)
+                                .background(Capsule().fill(Color.white))
+                                .foregroundColor(.black)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .place(layout.gridFrame.insetBy(dx: 10, dy: 10))
                 } else {
                     IconGrid(model: model, layout: layout)
                 }
@@ -645,6 +890,17 @@ struct PickerView: View {
             }
         }
         .ignoresSafeArea()
+        // Here, not beside the Settings sheet: on iOS 16, two presentations
+        // on one view can keep each other from showing.
+        .fileImporter(
+            isPresented: $model.showingImporter,
+            allowedContentTypes: [UTType(filenameExtension: "ipa") ?? .data, .folder],
+            allowsMultipleSelection: true
+        ) { result in
+            if case .success(let urls) = result {
+                model.importPicked(urls)
+            }
+        }
     }
 }
 
@@ -743,21 +999,21 @@ struct HeaderButton: View {
     }
 }
 
-/// File Manager, Settings and the website, in one bar like the iOS 26
+/// Import, File Manager and Settings, in one bar like the iOS 26
 /// tab bar. A real toolbar's height is fixed too short for the labels.
 struct ActionBar: View {
     @ObservedObject var model: PickerModel
 
     var body: some View {
         HStack(spacing: 0) {
+            item("square.and.arrow.down.fill", "Import") {
+                model.showingImporter = true
+            }
             item("folder.fill", "File Manager") {
                 model.open(model.input.fileManagerURL)
             }
             item("gearshape.fill", "Settings") {
                 model.showingSettings = true
-            }
-            item("safari.fill", "Website") {
-                model.open(model.input.websiteURL)
             }
         }
         .padding(.horizontal, 10)
@@ -1056,6 +1312,16 @@ struct SettingsView: View {
                                 .foregroundColor(.primary)
                         } icon: {
                             Image(systemName: "info.circle")
+                        }
+                    }
+                    Button {
+                        model.open(model.input.websiteURL)
+                    } label: {
+                        Label {
+                            Text("iDared 32bit Website")
+                                .foregroundColor(.primary)
+                        } icon: {
+                            Image(systemName: "safari")
                         }
                     }
                 }
