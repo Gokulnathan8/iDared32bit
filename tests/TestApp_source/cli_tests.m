@@ -7088,6 +7088,43 @@ out:
   return res;
 }
 
+@interface IMPTarget : NSObject
+- (int)triple:(int)x;
+@end
+
+@implementation IMPTarget
+- (int)triple:(int)x {
+  return x * 3;
+}
+@end
+
+int test_methodForSelector() {
+  IMPTarget *target = [IMPTarget new];
+  int res = 0;
+
+  // A method of the app's own.
+  typedef int (*TripleIMP)(id, SEL, int);
+  SEL triple = @selector(triple:);
+  TripleIMP f = (TripleIMP)[IMPTarget instanceMethodForSelector:triple];
+  if (!f || f(target, triple, 5) != 15 ||
+      (TripleIMP)[target methodForSelector:triple] != f) {
+    res = -1;
+  }
+
+  // A method implemented by the emulator.
+  typedef NSUInteger (*RetainCountIMP)(id, SEL);
+  SEL retainCount = @selector(retainCount);
+  RetainCountIMP g =
+      (RetainCountIMP)[IMPTarget instanceMethodForSelector:retainCount];
+  if (!res && (!g || g(target, retainCount) != 1 ||
+               (RetainCountIMP)[target methodForSelector:retainCount] != g)) {
+    res = -2;
+  }
+
+  [target release];
+  return res;
+}
+
 int test_malloc_zone_basic() {
   malloc_zone_t *zone = malloc_create_zone(0, 0);
   unsigned char *p = malloc_zone_malloc(zone, 128);
@@ -7435,6 +7472,7 @@ struct {
     FUNC_DEF(test_NSMutableArray_removeObjectsInArray_otherArray),
     FUNC_DEF(test_KVO_manual_notifications),
     FUNC_DEF(test_NSDirectoryEnumerator),
+    FUNC_DEF(test_methodForSelector),
     FUNC_DEF(test_malloc_zone_basic),
     FUNC_DEF(test_malloc_zone_struct_dispatch),
     FUNC_DEF(test_fcvt),

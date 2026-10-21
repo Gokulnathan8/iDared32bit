@@ -93,6 +93,10 @@ pub const CLASSES: ClassExports = objc_classes! {
     msg_class![env; NSMethodSignature signatureWithObjCTypes:sig]
 }
 
++ (GuestFunction)instanceMethodForSelector:(SEL)selector {
+    ObjC::class_get_method_guest_function(env, this, selector)
+}
+
 + (())initialize {
     // Do nothing
 }

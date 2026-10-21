@@ -83,6 +83,8 @@ void (*method_getImplementation(Method m))(void);
 - (NSUInteger)retainCount;
 - (id)performSelector:(SEL)selector;
 - (BOOL)respondsToSelector:(SEL)selector;
++ (void (*)(void))instanceMethodForSelector:(SEL)selector;
+- (void (*)(void))methodForSelector:(SEL)selector;
 @end
 
 @interface NSAutoreleasePool : NSObject
