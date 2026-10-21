@@ -148,6 +148,24 @@ fn init_common(env: &mut Environment, this: id) -> id {
     this
 }
 
+/// The selector set for a UIView animation, or else `default` if the
+/// delegate implements it.
+fn animation_selector(
+    env: &mut Environment,
+    delegate: id,
+    key: &'static str,
+    default: &str,
+) -> Option<SEL> {
+    let selector: id = msg_class![env; CATransaction valueForKey:(get_static_str(env, key))];
+    if selector != nil {
+        let selector = to_rust_string(env, selector);
+        return Some(env.objc.lookup_selector(&selector).unwrap());
+    }
+    let selector = env.objc.lookup_selector(default)?;
+    let responds: bool = msg![env; delegate respondsToSelector:selector];
+    responds.then_some(selector)
+}
+
 pub const CLASSES: ClassExports = objc_classes! {
 
 (env, this, _cmd);
@@ -281,16 +299,24 @@ pub const CLASSES: ClassExports = objc_classes! {
                 let context: ConstVoidPtr = ConstVoidPtr::from_bits(context as GuestUSize);
                 () = msg![env; animation_delegate setContext:context];
             }
-            let will_start_selector: id = msg_class![env; CATransaction valueForKey:(get_static_str(env, touchHLE_kCATransactionAnimationWillStartSelector))];
-            if will_start_selector != nil {
-                let will_start_selector = to_rust_string(env, will_start_selector);
-                let will_start_selector = env.objc.lookup_selector(&will_start_selector).unwrap();
+            // Like iPhone OS, use these selectors by default if the delegate
+            // implements them. Old games rely on that.
+            let will_start_selector = animation_selector(
+                env,
+                delegate,
+                touchHLE_kCATransactionAnimationWillStartSelector,
+                "animationWillStart:context:",
+            );
+            if let Some(will_start_selector) = will_start_selector {
                 () = msg![env; animation_delegate setWillStartSelector:will_start_selector];
             }
-            let did_stop_selector: id = msg_class![env; CATransaction valueForKey:(get_static_str(env, touchHLE_kCATransactionAnimationDidStopSelector))];
-            if did_stop_selector != nil {
-                let did_stop_selector = to_rust_string(env, did_stop_selector);
-                let did_stop_selector = env.objc.lookup_selector(&did_stop_selector).unwrap();
+            let did_stop_selector = animation_selector(
+                env,
+                delegate,
+                touchHLE_kCATransactionAnimationDidStopSelector,
+                "animationDidStop:finished:context:",
+            );
+            if let Some(did_stop_selector) = did_stop_selector {
                 () = msg![env; animation_delegate setDidStopSelector:did_stop_selector];
             }
             let total_animation_count = animations.len() as u32;
