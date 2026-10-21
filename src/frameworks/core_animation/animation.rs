@@ -326,7 +326,7 @@ fn apply_animation(
                 get_from_and_by_values(Some(presentation.position), from_value, to_value, by_value);
             presentation.position = from_value + by_value * interpolation_amount;
         }
-        "transform.rotation.z" => {
+        "transform.rotation" | "transform.rotation.z" => {
             let current = presentation.affine_transform;
             let current_angle = current.b.atan2(current.a);
             let from_value = id_as_option(from_value).map(|obj| msg![env; obj floatValue]);
@@ -336,6 +336,25 @@ fn apply_animation(
                 get_from_and_by_values(Some(current_angle), from_value, to_value, by_value);
             let angle = from_value + by_value * interpolation_amount;
             presentation.affine_transform = current.rotate(angle - current_angle);
+        }
+        "transform.scale" | "transform.scale.x" | "transform.scale.y" => {
+            // The x and y scales, as a point.
+            let current = CGPoint {
+                x: get_scale(presentation, "transform.scale.x"),
+                y: get_scale(presentation, "transform.scale.y"),
+            };
+            let from_value = id_as_option(from_value).map(|obj| scale_value(env, obj));
+            let to_value = id_as_option(to_value).map(|obj| scale_value(env, obj));
+            let by_value = id_as_option(by_value).map(|obj| scale_value(env, obj));
+            let (from_value, by_value) =
+                get_from_and_by_values(Some(current), from_value, to_value, by_value);
+            let scale = from_value + by_value * interpolation_amount;
+            if key_path != "transform.scale.y" {
+                set_scale(presentation, "transform.scale.x", scale.x);
+            }
+            if key_path != "transform.scale.x" {
+                set_scale(presentation, "transform.scale.y", scale.y);
+            }
         }
         "transform" => {
             assert!(by_value == nil, "TODO: byValue for transform animations");
@@ -714,27 +733,54 @@ fn apply_keyframes(
             presentation.affine_transform = current.rotate(value[0] - current_angle);
         }
         "transform.scale" | "transform.scale.x" | "transform.scale.y" => {
-            // Replace the scale, keeping the rotation and translation.
-            let t = &mut presentation.affine_transform;
-            let angle = t.b.atan2(t.a);
-            let (sin, cos) = angle.sin_cos();
-            let mut scale_x = t.a.hypot(t.b);
-            let mut scale_y = t.c.hypot(t.d);
-            if key_path != "transform.scale.y" {
-                scale_x = value[0];
-            }
-            if key_path != "transform.scale.x" {
-                scale_y = value[0];
-            }
-            t.a = cos * scale_x;
-            t.b = sin * scale_x;
-            t.c = -sin * scale_y;
-            t.d = cos * scale_y;
+            set_scale(presentation, key_path, value[0])
         }
         "transform" => presentation.affine_transform = transform_from_components(&value),
         "contents" => presentation.contents = keyframes.values[value[0] as usize],
         _ => unreachable!(),
     }
+}
+
+/// A scale animation value as x and y scales: an `NSNumber` scales both,
+/// and some apps use an `NSValue` of a `CGPoint` for each axis.
+fn scale_value(env: &mut Environment, value: id) -> CGPoint {
+    let number_class = env.objc.get_known_class("NSNumber", &mut env.mem);
+    if msg![env; value isKindOfClass:number_class] {
+        let scale: f32 = msg![env; value floatValue];
+        CGPoint { x: scale, y: scale }
+    } else {
+        msg![env; value CGPointValue]
+    }
+}
+
+/// The scale a `transform.scale` key path refers to (x for both axes).
+fn get_scale(presentation: &CALayerHostObject, key_path: &str) -> f32 {
+    let t = &presentation.affine_transform;
+    if key_path == "transform.scale.y" {
+        t.c.hypot(t.d)
+    } else {
+        t.a.hypot(t.b)
+    }
+}
+
+/// Replace the scale a `transform.scale` key path refers to, keeping the
+/// rotation and translation.
+fn set_scale(presentation: &mut CALayerHostObject, key_path: &str, scale: f32) {
+    let t = &mut presentation.affine_transform;
+    let angle = t.b.atan2(t.a);
+    let (sin, cos) = angle.sin_cos();
+    let mut scale_x = t.a.hypot(t.b);
+    let mut scale_y = t.c.hypot(t.d);
+    if key_path != "transform.scale.y" {
+        scale_x = scale;
+    }
+    if key_path != "transform.scale.x" {
+        scale_y = scale;
+    }
+    t.a = cos * scale_x;
+    t.b = sin * scale_x;
+    t.c = -sin * scale_y;
+    t.d = cos * scale_y;
 }
 
 #[cfg(test)]
