@@ -663,7 +663,10 @@ unsafe fn composite_layer_recursive(
         };
 
         gles.Color4f(opacity, opacity, opacity, opacity);
-        if opacity == 1.0 && host_obj.opaque && !have_background {
+        // `opaque` doesn't affect images set as contents: their alpha
+        // channel is kept.
+        let opaque = host_obj.opaque && host_obj.contents == nil;
+        if opacity == 1.0 && opaque && !have_background {
             gles.Disable(gles11::BLEND);
         } else {
             gles.Enable(gles11::BLEND);
