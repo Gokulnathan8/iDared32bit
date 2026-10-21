@@ -308,7 +308,7 @@ forUndefinedKey:(id)key { // NSString*
         if sel.as_str(&env.mem).ends_with(':') {
             () = msg_send(env, (this, sel, arg));
         } else {
-            assert!(arg.is_null());
+            // As on a device, a method without one ignores the argument.
             () = msg_send(env, (this, sel));
         }
         return;

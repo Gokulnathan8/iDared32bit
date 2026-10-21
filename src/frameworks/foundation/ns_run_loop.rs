@@ -428,7 +428,7 @@ pub fn run_run_loop(
                     if selector.as_str(&env.mem).ends_with(':') {
                         () = msg_send(env, (target, selector, argument));
                     } else {
-                        assert!(argument.is_null());
+                        // As on a device, a method without one ignores it.
                         () = msg_send(env, (target, selector));
                     }
 
