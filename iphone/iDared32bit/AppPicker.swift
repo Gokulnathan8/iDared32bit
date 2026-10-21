@@ -931,7 +931,7 @@ struct IconGrid: View {
 struct PageControl: View {
     @ObservedObject var model: PickerModel
     let pageCount: Int
-    private let dotSpacing: CGFloat = 15
+    private let dotSpacing: CGFloat = 18
 
     var body: some View {
         // Like UIPageControl's hidesForSinglePage: one dot says nothing.
@@ -944,7 +944,7 @@ struct PageControl: View {
                         let current = i == model.page
                         Circle()
                             .fill(Color.white.opacity(current ? 1 : 0.5))
-                            .frame(width: current ? 7 : 5, height: current ? 7 : 5)
+                            .frame(width: current ? 9 : 7, height: current ? 9 : 7)
                             .position(
                                 x: (startX + CGFloat(i) * dotSpacing).rounded(),
                                 y: (geometry.size.height / 2).rounded()
