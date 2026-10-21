@@ -1106,8 +1106,6 @@ struct SettingsView: View {
             .padding(.vertical, 6)
         } header: {
             Text("Header Background Color")
-        } footer: {
-            Text(model.headerColor.name)
         }
     }
 
@@ -1161,8 +1159,6 @@ struct SettingsView: View {
             .padding(.vertical, 6)
         } header: {
             Text("Header Text Color")
-        } footer: {
-            Text(model.headerTextColor.name)
         }
     }
 
