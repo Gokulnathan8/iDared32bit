@@ -479,6 +479,9 @@ pub const CLASSES: ClassExports = objc_classes! {
 // TODO
 
 - (id)valueForKey:(id)key { // NSString*
+    if key == nil {
+        return nil;
+    }
     let key_str = to_rust_string(env, key);
     // TODO: strip '@' and call super
     assert!(!key_str.starts_with('@'));

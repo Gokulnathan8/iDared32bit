@@ -122,6 +122,7 @@ void (*method_getImplementation(Method m))(void);
 - (BOOL)isEqualToDictionary:(NSDictionary *)otherDictionary;
 + (id)dictionaryWithContentsOfFile:(id)path;
 + (id)dictionaryWithContentsOfURL:(NSURL *)url;
+- (id)valueForKey:(id)key;
 @end
 
 @interface NSMutableDictionary<KeyType, ObjectType> : NSDictionary

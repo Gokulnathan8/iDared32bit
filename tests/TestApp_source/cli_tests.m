@@ -7125,7 +7125,7 @@ int test_methodForSelector() {
   return res;
 }
 
-int test_contentsOfFile_nil() {
+int test_nil_path_or_key() {
   if ([NSArray arrayWithContentsOfFile:nil] ||
       [NSMutableArray arrayWithContentsOfFile:nil] ||
       [NSDictionary dictionaryWithContentsOfFile:nil] ||
@@ -7136,6 +7136,11 @@ int test_contentsOfFile_nil() {
       [NSDictionary dictionaryWithContentsOfURL:nil] ||
       [NSMutableDictionary dictionaryWithContentsOfURL:nil])
     return -2;
+  NSDictionary *dict =
+      [NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:@1, nil]
+                                  forKeys:[NSArray arrayWithObjects:@2, nil]];
+  if ([dict valueForKey:nil])
+    return -3;
   return 0;
 }
 
@@ -7487,7 +7492,7 @@ struct {
     FUNC_DEF(test_KVO_manual_notifications),
     FUNC_DEF(test_NSDirectoryEnumerator),
     FUNC_DEF(test_methodForSelector),
-    FUNC_DEF(test_contentsOfFile_nil),
+    FUNC_DEF(test_nil_path_or_key),
     FUNC_DEF(test_malloc_zone_basic),
     FUNC_DEF(test_malloc_zone_struct_dispatch),
     FUNC_DEF(test_fcvt),
