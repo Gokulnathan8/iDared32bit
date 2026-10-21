@@ -7141,6 +7141,10 @@ int test_nil_path_or_key() {
                                   forKeys:[NSArray arrayWithObjects:@2, nil]];
   if ([dict valueForKey:nil])
     return -3;
+  NSMutableArray *array = [NSMutableArray array];
+  [array removeLastObject];
+  if ([array count] != 0)
+    return -4;
   return 0;
 }
 

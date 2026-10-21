@@ -741,8 +741,10 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (())removeLastObject {
-    let object = env.objc.borrow_mut::<ArrayHostObject>(this).array.pop().unwrap();
-    release(env, object)
+    // Apple's docs say this raises on an empty array, but it does nothing.
+    if let Some(object) = env.objc.borrow_mut::<ArrayHostObject>(this).array.pop() {
+        release(env, object)
+    }
 }
 
 - (())removeAllObjects {

@@ -106,6 +106,7 @@ void (*method_getImplementation(Method m))(void);
 - (void)addObject:(id)object;
 - (void)removeObject:(id)object;
 - (void)removeObjectsInArray:(NSArray *)otherArray;
+- (void)removeLastObject;
 @end
 
 @class NSURL;
