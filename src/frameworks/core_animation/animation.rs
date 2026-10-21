@@ -24,8 +24,10 @@ use crate::frameworks::core_animation::ca_animation::{
     kCAFillModeBoth, kCAFillModeForwards, CAMediaTimingFillMode, Keyframes,
 };
 use crate::frameworks::core_animation::ca_layer::remove_anonymous_animation;
+use crate::frameworks::core_animation::ca_transform_3d::CATransform3D;
 use crate::frameworks::core_animation::{ca_layer::CALayerHostObject, CACurrentMediaTime};
 use crate::frameworks::core_foundation::time::CFTimeInterval;
+use crate::frameworks::core_graphics::cg_affine_transform::CGAffineTransform;
 use crate::frameworks::core_graphics::cg_color::CGColorHostObject;
 use crate::frameworks::core_graphics::cg_path::path_points;
 use crate::frameworks::core_graphics::{CGPoint, CGRect, CGSize};
@@ -330,6 +332,22 @@ fn apply_animation(
             let angle = from_value + by_value * interpolation_amount;
             presentation.affine_transform = current.rotate(angle - current_angle);
         }
+        "transform" => {
+            assert!(by_value == nil, "TODO: byValue for transform animations");
+            let current = transform_components(presentation.affine_transform);
+            let mut value_of = |value: id| match id_as_option(value) {
+                Some(value) => transform_value_components(env, value),
+                None => current.clone(),
+            };
+            let (from_value, to_value) = (value_of(from_value), value_of(to_value));
+            let to_value = unwrap_angle(&from_value, to_value);
+            let value: Components = from_value
+                .iter()
+                .zip(&to_value)
+                .map(|(a, b)| a + (b - a) * interpolation_amount)
+                .collect();
+            presentation.affine_transform = transform_from_components(&value);
+        }
         _ => panic!("Attempted to animate on key {}", key_path),
     }
 }
@@ -449,6 +467,49 @@ fn id_as_option(value: id) -> Option<id> {
 /// for rectangles, so they can be interpolated and measured the same way.
 type Components = Vec<f32>;
 
+/// A transform's 2D part as translation, rotation, scale and shear, which
+/// interpolate more naturally than the matrix itself.
+fn transform_components(t: CGAffineTransform) -> Components {
+    let angle = t.b.atan2(t.a);
+    let (sin, cos) = angle.sin_cos();
+    // The y axis, with the rotation undone: (shear, scale y).
+    let shear = t.c * cos + t.d * sin;
+    let scale_y = -t.c * sin + t.d * cos;
+    vec![t.tx, t.ty, angle, t.a.hypot(t.b), shear, scale_y]
+}
+
+fn transform_from_components(value: &[f32]) -> CGAffineTransform {
+    let &[tx, ty, angle, scale_x, shear, scale_y] = value else {
+        unreachable!();
+    };
+    let (sin, cos) = angle.sin_cos();
+    CGAffineTransform {
+        a: cos * scale_x,
+        b: sin * scale_x,
+        c: shear * cos - scale_y * sin,
+        d: shear * sin + scale_y * cos,
+        tx,
+        ty,
+    }
+}
+
+fn transform_value_components(env: &mut Environment, value: id) -> Components {
+    let transform: CATransform3D = msg![env; value CATransform3DValue];
+    if !transform.is_affine() {
+        log_once!("Warning: only the 2D part of 3D layer transforms is animated.");
+    }
+    transform_components(transform.affine_part())
+}
+
+/// `next`, with its angle changed by whole turns so that it's within half a
+/// turn of `prev`'s, so rotations take the shortest way round.
+fn unwrap_angle(prev: &Components, mut next: Components) -> Components {
+    use std::f32::consts::{PI, TAU};
+    let delta = next[2] - prev[2];
+    next[2] -= ((delta + PI) / TAU).floor() * TAU;
+    next
+}
+
 fn keyframe_components(env: &mut Environment, key_path: &str, value: id) -> Components {
     match key_path {
         "opacity"
@@ -472,6 +533,7 @@ fn keyframe_components(env: &mut Environment, key_path: &str, value: id) -> Comp
             } = msg![env; value CGRectValue];
             vec![x, y, width, height]
         }
+        "transform" => transform_value_components(env, value),
         _ => panic!("Attempted keyframe animation on key {}", key_path),
     }
 }
@@ -509,6 +571,19 @@ fn apply_keyframes(
             .iter()
             .map(|&value| keyframe_components(env, key_path, value))
             .collect()
+    };
+    let values = if key_path == "transform" {
+        let mut unwrapped: Vec<Components> = Vec::with_capacity(values.len());
+        for value in values {
+            let value = match unwrapped.last() {
+                Some(prev) => unwrap_angle(prev, value),
+                None => value,
+            };
+            unwrapped.push(value);
+        }
+        unwrapped
+    } else {
+        values
     };
     let n = values.len();
     if n == 0 {
@@ -642,6 +717,38 @@ fn apply_keyframes(
             t.c = -sin * scale_y;
             t.d = cos * scale_y;
         }
+        "transform" => presentation.affine_transform = transform_from_components(&value),
         _ => unreachable!(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn transform_components_round_trip() {
+        let t = CGAffineTransform::make_rotation(2.0)
+            .scale(1.5, 0.5)
+            .translate(3.0, 4.0);
+        let back = transform_from_components(&transform_components(t));
+        for (a, b) in [
+            (t.a, back.a),
+            (t.b, back.b),
+            (t.c, back.c),
+            (t.d, back.d),
+            (t.tx, back.tx),
+            (t.ty, back.ty),
+        ] {
+            assert!((a - b).abs() < 1e-5, "{t:?} != {back:?}");
+        }
+    }
+
+    #[test]
+    fn unwrap_angle_takes_shortest_way() {
+        let prev = vec![0.0, 0.0, 3.0, 1.0, 0.0, 1.0];
+        let next = vec![0.0, 0.0, -3.0, 1.0, 0.0, 1.0];
+        let next = unwrap_angle(&prev, next);
+        assert!((next[2] - (std::f32::consts::TAU - 3.0)).abs() < 1e-5);
     }
 }
