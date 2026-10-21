@@ -117,6 +117,8 @@ struct CAAnimationHostObject {
     duration: CFTimeInterval,
     fill_mode: &'static str,
     started_at: Option<CFTimeInterval>,
+    /// Whether the delegate has been told the animation stopped.
+    stopped: bool,
     /// Values for keys that aren't properties (see `valueForKey:`), retained.
     other_values: HashMap<String, id>,
 }
@@ -133,6 +135,7 @@ impl Default for CAAnimationHostObject {
             duration: Default::default(),
             fill_mode: kCAFillModeRemoved,
             started_at: None,
+            stopped: false,
             other_values: HashMap::new(),
         }
     }
@@ -673,4 +676,11 @@ pub fn get_animation_start_time(
         .objc
         .borrow_mut::<CAAnimationHostObject>(animation)
         .started_at
+}
+
+pub fn get_animation_stopped(env: &mut Environment, animation: id) -> &mut bool {
+    &mut env
+        .objc
+        .borrow_mut::<CAAnimationHostObject>(animation)
+        .stopped
 }

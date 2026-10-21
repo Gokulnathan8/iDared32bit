@@ -19,9 +19,9 @@
 use std::ops::Sub;
 
 use crate::frameworks::core_animation::ca_animation::{
-    get_animation_start_time, get_group_animations, get_keyframes, kCAAnimationCubic,
-    kCAAnimationCubicPaced, kCAAnimationDiscrete, kCAAnimationPaced, kCAFillModeBackwards,
-    kCAFillModeBoth, kCAFillModeForwards, CAMediaTimingFillMode, Keyframes,
+    get_animation_start_time, get_animation_stopped, get_group_animations, get_keyframes,
+    kCAAnimationCubic, kCAAnimationCubicPaced, kCAAnimationDiscrete, kCAAnimationPaced,
+    kCAFillModeBackwards, kCAFillModeBoth, kCAFillModeForwards, CAMediaTimingFillMode, Keyframes,
 };
 use crate::frameworks::core_animation::ca_layer::remove_anonymous_animation;
 use crate::frameworks::core_animation::ca_transform_3d::CATransform3D;
@@ -119,14 +119,19 @@ impl State {
             let progress = repeat_progress(current_repeat, effective_repeat_count, autoreverses);
 
             if current_repeat >= effective_repeat_count {
-                let removed_on_completion: bool = msg![env; animation isRemovedOnCompletion];
-                self.finished_animations.push((
-                    layer,
-                    animation,
-                    true,
-                    removed_on_completion,
-                    key.to_owned(),
-                ));
+                // Animations kept after completion only stop once.
+                let stopped = get_animation_stopped(env, animation);
+                if !*stopped {
+                    *stopped = true;
+                    let removed_on_completion: bool = msg![env; animation isRemovedOnCompletion];
+                    self.finished_animations.push((
+                        layer,
+                        animation,
+                        true,
+                        removed_on_completion,
+                        key.to_owned(),
+                    ));
+                }
                 if fill_mode != kCAFillModeForwards && fill_mode != kCAFillModeBoth {
                     continue;
                 }
