@@ -7,7 +7,7 @@
 
 use super::UIBarItemHostObject;
 use crate::frameworks::core_graphics::{CGFloat, CGPoint, CGRect, CGSize};
-use crate::frameworks::foundation::ns_string::to_rust_string;
+use crate::frameworks::foundation::ns_string::{get_static_str, to_rust_string};
 use crate::frameworks::foundation::NSInteger;
 use crate::frameworks::uikit::ui_font::UITextAlignmentCenter;
 use crate::frameworks::uikit::ui_view::ui_control::UIControlEventTouchUpInside;
@@ -22,6 +22,7 @@ pub const UIBarButtonItemStyleBordered: UIBarButtonItemStyle = 1;
 pub const UIBarButtonItemStyleDone: UIBarButtonItemStyle = 2;
 
 pub type UIBarButtonSystemItem = NSInteger;
+pub const UIBarButtonSystemItemDone: UIBarButtonSystemItem = 0;
 pub const UIBarButtonSystemItemFlexibleSpace: UIBarButtonSystemItem = 5;
 pub const UIBarButtonSystemItemFixedSpace: UIBarButtonSystemItem = 6;
 
@@ -177,21 +178,30 @@ pub const CLASSES: ClassExports = objc_classes! {
         action
     );
 
-    let label = if system_item == UIBarButtonSystemItemFlexibleSpace
-        || system_item == UIBarButtonSystemItemFixedSpace
-    {
-        nil
-    } else {
-        unimplemented!(
+    let (title, label, style) = match system_item {
+        UIBarButtonSystemItemDone => {
+            let title = get_static_str(env, "Done");
+            let label = make_label(env, title);
+            (title, label, UIBarButtonItemStyleDone)
+        }
+
+        UIBarButtonSystemItemFlexibleSpace
+        | UIBarButtonSystemItemFixedSpace => {
+            (nil, nil, UIBarButtonItemStylePlain)
+        }
+
+        _ => unimplemented!(
             "UIBarButtonSystemItem {} rendering not implemented",
             system_item
-        );
+        ),
     };
 
     let custom_view = make_custom_view(env, label, target, action);
 
     {
         let host = env.objc.borrow_mut::<UIBarButtonItemHostObject>(this);
+        host.superclass.title = title;
+        host.style = style;
         host.system_item = Some(system_item);
         host.target = target;
         host.action = Some(action);
@@ -199,6 +209,9 @@ pub const CLASSES: ClassExports = objc_classes! {
         host.label = label;
     }
 
+    if title != nil {
+        retain(env, title);
+    }
     if target != nil {
         retain(env, target);
     }
