@@ -7,8 +7,10 @@
 //! part of one is used.
 
 use crate::abi::{impl_GuestRet_for_large_struct, GuestArg};
-use crate::dyld::{export_c_func, FunctionExports};
-use crate::frameworks::core_graphics::cg_affine_transform::CGAffineTransform;
+use crate::dyld::{export_c_func, ConstantExports, FunctionExports, HostConstant};
+use crate::frameworks::core_graphics::cg_affine_transform::{
+    CGAffineTransform, CGAffineTransformIdentity,
+};
 use crate::frameworks::core_graphics::CGFloat;
 use crate::mem::SafeRead;
 use crate::Environment;
@@ -88,6 +90,14 @@ fn CATransform3DIsAffine(_env: &mut Environment, t: CATransform3D) -> bool {
 fn CATransform3DGetAffineTransform(_env: &mut Environment, t: CATransform3D) -> CGAffineTransform {
     t.affine_part()
 }
+
+pub const CONSTANTS: ConstantExports = &[(
+    "_CATransform3DIdentity",
+    HostConstant::Custom(|env| {
+        let identity = CATransform3D::from(CGAffineTransformIdentity);
+        env.mem.alloc_and_write(identity).cast().cast_const()
+    }),
+)];
 
 pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(CATransform3DMakeAffineTransform(_)),
