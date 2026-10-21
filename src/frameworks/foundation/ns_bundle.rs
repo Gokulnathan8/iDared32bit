@@ -74,6 +74,20 @@ pub const CLASSES: ClassExports = objc_classes! {
    }
 }
 
+// Only the app's own bundle exists here, not the system frameworks' ones.
++ (id)bundleWithIdentifier:(id)identifier { // NSString*
+    let main_bundle: id = msg![env; this mainBundle];
+    let main_id: id = msg![env; main_bundle bundleIdentifier];
+    if identifier != nil && msg![env; identifier isEqualToString:main_id] {
+        return main_bundle;
+    }
+    log!(
+        "Warning: [NSBundle bundleWithIdentifier:{:?}] returning nil, only the app's own bundle is available",
+        if identifier == nil { "nil".into() } else { ns_string::to_rust_string(env, identifier) }
+    );
+    nil
+}
+
 + (id)preferredLocalizationsFromArray:(id)localizations_array { // NSArray<NSString *> *
     let preferredLocalizations = CFBundleCopyPreferredLocalizationsFromArray(env, localizations_array);
     autorelease(env, preferredLocalizations)
