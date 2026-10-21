@@ -408,6 +408,13 @@ pub const CLASSES: ClassExports = objc_classes! {
     let key_ns_string = get_static_str(env, "UIOpaque");
     let opaque: bool = msg![env; coder decodeBoolForKey:key_ns_string];
 
+    let key_ns_string = get_static_str(env, "UIAlpha");
+    let alpha: CGFloat = if msg![env; coder containsValueForKey:key_ns_string] {
+        msg![env; coder decodeFloatForKey:key_ns_string]
+    } else {
+        1.0
+    };
+
     let key_ns_string = get_static_str(env, "UIBackgroundColor");
     let bg_color: id = msg![env; coder decodeObjectForKey:key_ns_string];
 
@@ -442,6 +449,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     () = msg![env; this setCenter:center];
     () = msg![env; this setHidden:hidden];
     () = msg![env; this setOpaque:opaque];
+    () = msg![env; this setAlpha:alpha];
     () = msg![env; this setBackgroundColor:bg_color];
     () = msg![env; this setTag:tag];
     () = msg![env; this setMultipleTouchEnabled:multi_touch_enabled];
