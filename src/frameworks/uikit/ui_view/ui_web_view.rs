@@ -37,6 +37,12 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (())setDelegate:(id)_delegate {
     // TODO
 }
+// Pages are never loaded (see loadRequest:), so nothing is ever loading.
+- (bool)isLoading {
+    false
+}
+- (())stopLoading {}
+
 - (())loadRequest:(id)request { // NSURLRequest*
     let url_string = if request != nil {
         let url = msg![env; request URL];
