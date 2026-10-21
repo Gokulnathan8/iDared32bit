@@ -644,6 +644,12 @@ pub const CLASSES: ClassExports = objc_classes! {
     retain(env, anim);
 }
 
+- (id)animationForKey:(id)key { // NSString*
+    let key_string = to_rust_string(env, key);
+    let host_obj = env.objc.borrow::<CALayerHostObject>(this);
+    host_obj.animations.get(&*key_string).copied().unwrap_or(nil)
+}
+
 - (())removeAnimationForKey:(id)key { // NSString*
     let key_string = to_rust_string(env, key);
     log_dbg!("[(CALayer*){:?} removeAnimationForKey:{:?} ({:?})]", this, key, key_string);
