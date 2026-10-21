@@ -56,9 +56,30 @@ struct AppInfo {
 }
 
 pub fn app_picker(options: Options) -> Result<(PathBuf, Vec<String>), String> {
+    let apps = find_apps(&options);
+
+    #[cfg(target_os = "ios")]
+    if swiftui::is_available() {
+        // The picker asks to be shown again when the Games folder changes,
+        // e.g. after a game is added in the Files app.
+        let (mut apps, mut state) = (apps, None);
+        loop {
+            match swiftui::app_picker(apps, state)? {
+                swiftui::Picked::App(path, args) => return Ok((path, args)),
+                swiftui::Picked::Reload(new_state) => {
+                    state = Some(new_state);
+                    apps = find_apps(&options);
+                }
+            }
+        }
+    }
+    show_app_picker_gui(options, apps)
+}
+
+fn find_apps(options: &Options) -> Result<Vec<AppInfo>, String> {
     let apps_dir = paths::user_data_base_path().join(paths::apps_dir());
 
-    let apps: Result<Vec<AppInfo>, String> = if !apps_dir.is_dir() {
+    if !apps_dir.is_dir() {
         Err(format!(
             "The {} folder couldn't be found.",
             paths::apps_dir()
@@ -92,13 +113,7 @@ pub fn app_picker(options: Options) -> Result<(PathBuf, Vec<String>), String> {
                     Ok(apps)
                 }
             })
-    };
-
-    #[cfg(target_os = "ios")]
-    if swiftui::is_available() {
-        return swiftui::app_picker(apps);
     }
-    show_app_picker_gui(options, apps)
 }
 
 fn enumerate_apps(

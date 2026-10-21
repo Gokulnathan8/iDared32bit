@@ -13,6 +13,7 @@ Usability:
 - Theme Options can hide the logo in the app picker's header, showing the name instead with a shorter header.
 - Theme Options can also hide the names under the games' icons.
 - On iPhone and iPad, a wallpaper for the app picker can be chosen from Photos, in Theme Options.
+- On iPhone and iPad, games added or removed with File Manager now show up in the app picker as soon as you come back to it.
 
 Compatibility:
 

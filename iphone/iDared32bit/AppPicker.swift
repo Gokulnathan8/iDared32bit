@@ -6,6 +6,7 @@
 // Native SwiftUI app picker, shown by src/environment/app_picker/swiftui.rs.
 // The layout matches the picker drawn by src/environment/app_picker.rs.
 
+import Combine
 import CoreImage
 import PhotosUI
 import SwiftUI
@@ -34,6 +35,11 @@ struct PickerInput: Decodable {
     /// Where the wallpaper goes, and the names Rust looks for there.
     let wallpaperFolder: String
     let wallpaperFiles: [String]
+    /// The Games folder, watched for games added while the picker is open.
+    let appsFolder: String
+    /// Kept from before the picker was shown again.
+    let initialPage: Int
+    let initialQuickOptionValues: [Int]?
     let branding: String
     let shortVersionText: String
     let copyright: String
@@ -215,6 +221,12 @@ final class PickerModel: ObservableObject {
         quickOptionValues = input.quickOptions.map(\.defaultValue)
         showingStartError = input.startError != nil
         wallpaper = input.wallpaperPath.flatMap { UIImage(contentsOfFile: $0) }
+        if let values = input.initialQuickOptionValues,
+           values.count == quickOptionValues.count {
+            quickOptionValues = values
+        }
+        page = input.initialPage
+        gamesFolderContents = Self.contents(of: input.appsFolder)
     }
 
     /// Saves a photo as the wallpaper, in place of any other wallpaper file.
@@ -268,6 +280,32 @@ final class PickerModel: ObservableObject {
         return UIGraphicsImageRenderer(size: size, format: format).image { _ in
             photo.draw(in: CGRect(origin: .zero, size: size))
         }
+    }
+
+    /// What was in the Games folder when the picker was shown.
+    private var gamesFolderContents: [String] = []
+
+    /// The names and modification dates of what's in a folder.
+    private static func contents(of folder: String) -> [String] {
+        let manager = FileManager.default
+        let names = (try? manager.contentsOfDirectory(atPath: folder)) ?? []
+        return names.sorted().map { name in
+            let path = (folder as NSString).appendingPathComponent(name)
+            let date = (try? manager.attributesOfItem(atPath: path))?[.modificationDate]
+            return "\(name) \(String(describing: date))"
+        }
+    }
+
+    /// Asks Rust to show the picker again if games were added or removed,
+    /// e.g. in the Files app, keeping the page and options.
+    func reloadIfGamesChanged() {
+        guard result == nil,
+              Self.contents(of: input.appsFolder) != gamesFolderContents
+        else {
+            return
+        }
+        let lines = ["reload", String(page)] + quickOptionValues.map(String.init)
+        result = lines.joined(separator: "\n")
     }
 
     /// Rust turns the quick option values into option arguments.
@@ -525,6 +563,13 @@ struct PickerView: View {
     var body: some View {
         content
             .statusBarHidden(false)
+            // Back from File Manager (or anywhere else).
+            .onReceive(
+                NotificationCenter.default
+                    .publisher(for: UIApplication.willEnterForegroundNotification)
+            ) { _ in
+                model.reloadIfGamesChanged()
+            }
             .sheet(isPresented: $model.showingSettings) {
                 SettingsView(model: model)
             }
