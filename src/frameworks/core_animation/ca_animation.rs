@@ -174,6 +174,27 @@ impl Default for CAKeyframeAnimationHostObject {
     }
 }
 
+#[derive(Default)]
+struct CAAnimationGroupHostObject {
+    superclass: CAAnimationHostObject,
+    animations: id, // NSArray<CAAnimation*>*
+}
+impl_HostObject_with_superclass!(CAAnimationGroupHostObject);
+
+/// The animations of a group, or [None] if it's not a group.
+pub fn get_group_animations(env: &mut Environment, animation: id) -> Option<Vec<id>> {
+    let class = env.objc.get_known_class("CAAnimationGroup", &mut env.mem);
+    let animation_class: Class = msg![env; animation class];
+    if !env.objc.class_is_subclass_of(animation_class, class) {
+        return None;
+    }
+    let animations = env
+        .objc
+        .borrow::<CAAnimationGroupHostObject>(animation)
+        .animations;
+    Some(array_to_vec(env, animations))
+}
+
 /// What a keyframe animation animates between, for [super::animation].
 pub struct Keyframes {
     /// `id`s of the values, if there's no path.
@@ -534,6 +555,39 @@ pub const CLASSES: ClassExports = objc_classes! {
     release(env, timing_functions);
     CGPathRelease(env, path);
     release(env, rotation_mode);
+    msg_super![env; this dealloc]
+}
+
+@end
+
+
+@implementation CAAnimationGroup: CAAnimation
+
++ (id)allocWithZone:(NSZonePtr)_zone {
+    let host_object = Box::<CAAnimationGroupHostObject>::default();
+    env.objc.alloc_object(this, host_object, &mut env.mem)
+}
+
+- (id)init {
+    let this: id = msg_super![env; this init];
+    // No timing function means linear pacing.
+    () = msg![env; this setTimingFunction:nil];
+    this
+}
+
+- (())setAnimations:(id)animations { // NSArray<CAAnimation*>*
+    let animations: id = msg![env; animations copy];
+    let host_obj = env.objc.borrow_mut::<CAAnimationGroupHostObject>(this);
+    let old = std::mem::replace(&mut host_obj.animations, animations);
+    release(env, old);
+}
+- (id)animations {
+    env.objc.borrow::<CAAnimationGroupHostObject>(this).animations
+}
+
+- (())dealloc {
+    let animations = env.objc.borrow::<CAAnimationGroupHostObject>(this).animations;
+    release(env, animations);
     msg_super![env; this dealloc]
 }
 

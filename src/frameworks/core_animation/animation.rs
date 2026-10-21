@@ -19,9 +19,9 @@
 use std::ops::Sub;
 
 use crate::frameworks::core_animation::ca_animation::{
-    get_animation_start_time, get_keyframes, kCAAnimationCubic, kCAAnimationCubicPaced,
-    kCAAnimationDiscrete, kCAAnimationPaced, kCAFillModeBackwards, kCAFillModeBoth,
-    kCAFillModeForwards, CAMediaTimingFillMode, Keyframes,
+    get_animation_start_time, get_group_animations, get_keyframes, kCAAnimationCubic,
+    kCAAnimationCubicPaced, kCAAnimationDiscrete, kCAAnimationPaced, kCAFillModeBackwards,
+    kCAFillModeBoth, kCAFillModeForwards, CAMediaTimingFillMode, Keyframes,
 };
 use crate::frameworks::core_animation::ca_layer::remove_anonymous_animation;
 use crate::frameworks::core_animation::{ca_layer::CALayerHostObject, CACurrentMediaTime};
@@ -193,6 +193,15 @@ fn apply_animation(
         msg![env; timing_function _solveForInput: progress]
     };
 
+    if let Some(children) = get_group_animations(env, animation) {
+        let duration: CFTimeInterval = msg![env; animation duration];
+        let elapsed = f64::from(amount) * duration;
+        for child in children {
+            apply_group_child(env, presentation, child, elapsed, duration);
+        }
+        return;
+    }
+
     if let Some(keyframes) = get_keyframes(env, animation) {
         let key_path: id = msg![env; animation keyPath];
         let key_path = to_rust_string(env, key_path).into_owned();
@@ -337,6 +346,46 @@ fn repeat_progress(current_repeat: f32, repeat_count: f32, autoreverses: bool) -
     } else {
         progress
     }
+}
+
+/// Apply an animation in a group, `elapsed` seconds into the group.
+fn apply_group_child(
+    env: &mut Environment,
+    presentation: &mut CALayerHostObject,
+    child: id,
+    elapsed: CFTimeInterval,
+    group_duration: CFTimeInterval,
+) {
+    let begin_time: CFTimeInterval = msg![env; child beginTime];
+    let duration: CFTimeInterval = msg![env; child duration];
+    // Children without their own duration take the group's.
+    let duration = if duration > 0.0 {
+        duration
+    } else {
+        group_duration
+    };
+    let repeat_count: f32 = msg![env; child repeatCount];
+    let repeat_count = if repeat_count == 0.0 {
+        1.0
+    } else {
+        repeat_count
+    };
+    let fill_mode: CAMediaTimingFillMode = msg![env; child fillMode];
+    let fill_mode = to_rust_string(env, fill_mode);
+    let fills_backwards = fill_mode == kCAFillModeBackwards || fill_mode == kCAFillModeBoth;
+    let fills_forwards = fill_mode == kCAFillModeForwards || fill_mode == kCAFillModeBoth;
+
+    let local = elapsed - begin_time;
+    if local < 0.0 && !fills_backwards {
+        return;
+    }
+    let current_repeat = ((local.max(0.0) / duration) as f32).min(repeat_count);
+    if current_repeat >= repeat_count && !fills_forwards {
+        return;
+    }
+    let autoreverses: bool = msg![env; child autoreverses];
+    let progress = repeat_progress(current_repeat, repeat_count, autoreverses);
+    apply_animation(env, presentation, child, progress, current_repeat.floor());
 }
 
 fn get_from_and_by_values<T>(
