@@ -179,6 +179,12 @@ final class PickerModel: ObservableObject {
         }
     }
 
+    @Published var hideHeaderLogo = UserDefaults.standard.bool(forKey: hideHeaderLogoKey) {
+        didSet {
+            UserDefaults.standard.set(hideHeaderLogo, forKey: hideHeaderLogoKey)
+        }
+    }
+
     /// The header's contents are dimmed and black and white on the black
     /// header.
     var blackHeaderShown: Bool {
@@ -243,8 +249,10 @@ final class PickerHostingController: UIHostingController<PickerView> {
 
 /// The logo's background colour, so it blends in.
 let headerBlue = Color(red: 0, green: 77 / 255, blue: 215 / 255)
+let logoYellow = Color(red: 253 / 255, green: 224 / 255, blue: 22 / 255)
 
 private let headerColorKey = "AppPickerHeaderColor"
+private let hideHeaderLogoKey = "AppPickerHideHeaderLogo"
 
 /// The header colors to choose from.
 enum HeaderColor: String, CaseIterable {
@@ -300,14 +308,16 @@ struct PickerLayout {
     /// About two characters wider, used when the neighbouring names leave room.
     let labelMaxWidth: CGFloat
 
-    init(size: CGSize, insets: UIEdgeInsets) {
+    init(size: CGSize, insets: UIEdgeInsets, hideLogo: Bool) {
         self.size = size
         self.insets = insets
         // Phones with a notch or Dynamic Island leave about 10pt below it in
         // their safe area; use that. Older ones only leave room for the
         // status bar.
         let headerTop = insets.top > 40 ? insets.top - 10 : max(insets.top, 8)
-        headerContent = CGRect(x: 0, y: headerTop, width: size.width, height: 72)
+        // Without the logo, it only needs to fit the buttons.
+        let headerHeight: CGFloat = hideLogo ? 62 : 72
+        headerContent = CGRect(x: 0, y: headerTop, width: size.width, height: headerHeight)
         header = CGRect(x: 0, y: 0, width: size.width, height: headerContent.maxY + 6)
 
         // Sized and placed like the iOS 26 tab bar.
@@ -431,7 +441,11 @@ struct PickerView: View {
 
     private var content: some View {
         GeometryReader { geometry in
-            let layout = PickerLayout(size: geometry.size, insets: model.safeInsets)
+            let layout = PickerLayout(
+                size: geometry.size,
+                insets: model.safeInsets,
+                hideLogo: model.hideHeaderLogo
+            )
             ZStack(alignment: .topLeading) {
                 Color.black
                 if let wallpaper = model.wallpaper {
@@ -483,18 +497,30 @@ struct Header: View {
                 .opacity(model.blackHeaderShown ? 0.65 : 1)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .place(CGRect(x: 16, y: content.minY, width: 60, height: content.height))
-            // The logo fills the space between the version and the buttons.
-            Image("AppPickerLogo")
-                .resizable()
-                .scaledToFit()
-                .grayscale(model.blackHeaderShown ? 1 : 0)
-                .opacity(model.blackHeaderShown ? 0.65 : 1)
-                .place(CGRect(
-                    x: 80,
-                    y: content.minY + 2,
-                    width: content.maxX - side - 84,
-                    height: content.height - 4
-                ))
+            // The logo, or the name, fills the space between the version and
+            // the buttons.
+            let logoFrame = CGRect(
+                x: 80,
+                y: content.minY + 2,
+                width: content.maxX - side - 84,
+                height: content.height - 4
+            )
+            if model.hideHeaderLogo {
+                Text("iDared 32bit")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(model.blackHeaderShown ? .white : logoYellow)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .opacity(model.blackHeaderShown ? 0.65 : 1)
+                    .place(logoFrame)
+            } else {
+                Image("AppPickerLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .grayscale(model.blackHeaderShown ? 1 : 0)
+                    .opacity(model.blackHeaderShown ? 0.65 : 1)
+                    .place(logoFrame)
+            }
             HStack(spacing: 8) {
                 HeaderButton(
                     title: "About",
@@ -827,6 +853,11 @@ struct SettingsView: View {
                     NavigationLink {
                         page("Theme Options") {
                             headerColorSection
+                            Section {
+                                Toggle("Hide Header Logo", isOn: $model.hideHeaderLogo)
+                            } footer: {
+                                Text("Shows the name instead, with a shorter header.")
+                            }
                         }
                     } label: {
                         Label("Theme Options", systemImage: "paintpalette")
