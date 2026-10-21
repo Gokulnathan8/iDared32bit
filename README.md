@@ -62,6 +62,8 @@ To access the `Games` folder, simply tap the “File manager” button in iDared
 
 To configure the options, you can edit the `Options.txt` file. To get a list of options, look in the `OPTIONS_HELP.txt` file.
 
+On iPhone and iPad, Settings in the app picker has the most common options (such as the scale hack, orientation and network access) for the game you launch next. They start at “Default” each time, which leaves `Options.txt` in charge; anything else you pick overrides `Options.txt` for that launch only. To make a setting permanent for a game, put it in `Options.txt`.
+
 Any data saved by the app (e.g. **saved games**) are stored in the `Saves` folder.
 
 Older versions used touchHLE's names (`touchHLE_apps`, `touchHLE_options.txt`, `touchHLE_sandbox` and `touchHLE_wallpaper.png`), and iDared 32bit moves them to the new names automatically.

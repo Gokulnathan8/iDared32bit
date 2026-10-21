@@ -164,7 +164,7 @@ final class PickerModel: ObservableObject {
     @Published var safeInsets = UIEdgeInsets.zero
     @Published var page = 0
     @Published var pressedApp: Int?
-    @Published var showingQuickOptions = false
+    @Published var showingSettings = false
     @Published var showingCopyright = false
     @Published var copyrightPage = 0
     @Published var showingStartError: Bool
@@ -419,8 +419,8 @@ struct PickerView: View {
     var body: some View {
         content
             .statusBarHidden(false)
-            .sheet(isPresented: $model.showingQuickOptions) {
-                QuickOptionsView(model: model)
+            .sheet(isPresented: $model.showingSettings) {
+                SettingsView(model: model)
             }
             .alert("The Game Stopped", isPresented: $model.showingStartError) {
                 Button("OK", role: .cancel) {}
@@ -551,7 +551,7 @@ struct HeaderButton: View {
     }
 }
 
-/// File Manager, Quick Options and the website, in one bar like the iOS 26
+/// File Manager, Settings and the website, in one bar like the iOS 26
 /// tab bar. A real toolbar's height is fixed too short for the labels.
 struct ActionBar: View {
     @ObservedObject var model: PickerModel
@@ -561,8 +561,8 @@ struct ActionBar: View {
             item("folder.fill", "File Manager") {
                 model.open(model.input.fileManagerURL)
             }
-            item("gearshape.fill", "Quick Options") {
-                model.showingQuickOptions = true
+            item("gearshape.fill", "Settings") {
+                model.showingSettings = true
             }
             item("safari.fill", "Website") {
                 model.open(model.input.websiteURL)
@@ -811,35 +811,58 @@ struct ButtonRow: View {
 }
 
 /// A standard iOS settings sheet. The options apply to the next app opened.
-struct QuickOptionsView: View {
+/// Settings: the game options, with Theme Options on its own page.
+struct SettingsView: View {
     @ObservedObject var model: PickerModel
 
     var body: some View {
         NavigationStack {
             Form {
+                // Game options change every launch, so they come first;
+                // themes are set once, so they're a tap away.
                 ForEach(model.input.quickOptions.indices, id: \.self) { i in
                     section(i)
                 }
-                headerColorSection
-            }
-            .navigationTitle("Quick Options")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    // Since iOS 26, Done is a checkmark in a glass circle.
-                    if #available(iOS 26, *) {
-                        Button(role: .confirm) {
-                            model.showingQuickOptions = false
+                Section {
+                    NavigationLink {
+                        page("Theme Options") {
+                            headerColorSection
                         }
-                    } else {
-                        Button("Done") {
-                            model.showingQuickOptions = false
-                        }
+                    } label: {
+                        Label("Theme Options", systemImage: "paintpalette")
                     }
                 }
             }
+            .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { doneButton }
         }
         .preferredColorScheme(.dark)
+    }
+
+    private func page(
+        _ title: String,
+        @ViewBuilder content: () -> some View
+    ) -> some View {
+        Form(content: content)
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { doneButton }
+    }
+
+    private var doneButton: some ToolbarContent {
+        ToolbarItem(placement: .confirmationAction) {
+            // Since iOS 26, Done is a checkmark in a glass circle.
+            if #available(iOS 26, *) {
+                Button(role: .confirm) {
+                    model.showingSettings = false
+                }
+            } else {
+                Button("Done") {
+                    model.showingSettings = false
+                }
+            }
+        }
     }
 
     private var headerColorSection: some View {

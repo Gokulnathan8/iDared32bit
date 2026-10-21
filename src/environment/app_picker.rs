@@ -1650,7 +1650,7 @@ impl QuickOption {
 const QUICK_OPTIONS: &[QuickOption] = &[
     QuickOption {
         label: "Scale hack",
-        footer: "Runs the app at a higher resolution. This may not work with every app.",
+        footer: "Attempt to scale the game to a higher resolution (some may not work).",
         kind: QuickOptionKind::Choice(&[
             ("Default", None),
             ("Off", Some("--scale-hack=1")),
@@ -1662,7 +1662,7 @@ const QUICK_OPTIONS: &[QuickOption] = &[
     },
     QuickOption {
         label: "Orientation",
-        footer: "For apps that are in the wrong orientation.",
+        footer: "For games that are in the wrong orientation.",
         kind: QuickOptionKind::Choice(&[
             ("Default", None),
             ("←", Some("--landscape-left")),
@@ -1673,7 +1673,7 @@ const QUICK_OPTIONS: &[QuickOption] = &[
     },
     QuickOption {
         label: "Network access",
-        footer: "Without this, apps see what an iPhone in airplane mode would.",
+        footer: "Off means games work as if in airplane mode.",
         kind: QuickOptionKind::Switch {
             default: false,
             on: Some("--allow-network-access"),

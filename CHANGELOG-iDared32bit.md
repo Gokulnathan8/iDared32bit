@@ -8,7 +8,8 @@ Usability:
 
 - When a game opens a web page, it now opens on iPhone and iPad too, and iDared 32bit returns to the app picker instead of closing.
 - Toolbars in games look as they did on iPhone OS 3, with glossy bars and buttons, instead of plain white buttons.
-- On iPhone and iPad, the app picker's header can be blue, black, purple, pink, green, orange or teal, chosen in Quick Options.
+- On iPhone and iPad, the app picker's header can be blue, black, purple, pink, green, orange or teal, chosen in Theme Options.
+- The app picker's Quick Options button is now Settings: the same game options, plus a Theme Options page.
 
 Compatibility:
 
