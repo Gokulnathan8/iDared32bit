@@ -173,6 +173,18 @@ final class PickerModel: ObservableObject {
     /// The value of each of the quick options.
     @Published var quickOptionValues: [Int]
 
+    @Published var headerColor = HeaderColor.saved {
+        didSet {
+            UserDefaults.standard.set(headerColor.rawValue, forKey: headerColorKey)
+        }
+    }
+
+    /// The header's contents are dimmed and black and white on the black
+    /// header.
+    var blackHeaderShown: Bool {
+        headerColor == .black
+    }
+
     /// Set when an app is picked: what's returned to Rust.
     var result: String?
 
@@ -231,6 +243,34 @@ final class PickerHostingController: UIHostingController<PickerView> {
 
 /// The logo's background colour, so it blends in.
 let headerBlue = Color(red: 0, green: 77 / 255, blue: 215 / 255)
+
+private let headerColorKey = "AppPickerHeaderColor"
+
+/// The header colors to choose from.
+enum HeaderColor: String, CaseIterable {
+    case blue, black, purple, pink, green, orange, teal
+
+    static var saved: HeaderColor {
+        UserDefaults.standard.string(forKey: headerColorKey)
+            .flatMap(HeaderColor.init(rawValue:)) ?? .blue
+    }
+
+    var color: Color {
+        switch self {
+        case .blue: return headerBlue
+        case .black: return .black
+        case .purple: return Color(red: 0.42, green: 0.18, blue: 0.75)
+        case .pink: return Color(red: 0.88, green: 0.24, blue: 0.55)
+        case .green: return Color(red: 0.08, green: 0.55, blue: 0.28)
+        case .orange: return Color(red: 0.8, green: 0.33, blue: 0)
+        case .teal: return Color(red: 0, green: 0.55, blue: 0.55)
+        }
+    }
+
+    var name: String {
+        rawValue.capitalized
+    }
+}
 let labelFontSize: CGFloat = 14
 let labelLineHeight: CGFloat = 17
 
@@ -433,19 +473,22 @@ struct Header: View {
         let content = layout.headerContent
         let side: CGFloat = 124
         ZStack(alignment: .topLeading) {
-            headerBlue
+            model.headerColor.color
                 .place(layout.header)
             Text("v" + model.input.shortVersionText)
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(.white)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
+                .opacity(model.blackHeaderShown ? 0.65 : 1)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .place(CGRect(x: 16, y: content.minY, width: 60, height: content.height))
             // The logo fills the space between the version and the buttons.
             Image("AppPickerLogo")
                 .resizable()
                 .scaledToFit()
+                .grayscale(model.blackHeaderShown ? 1 : 0)
+                .opacity(model.blackHeaderShown ? 0.65 : 1)
                 .place(CGRect(
                     x: 80,
                     y: content.minY + 2,
@@ -464,6 +507,8 @@ struct Header: View {
                     }
                 )
             }
+            .grayscale(model.blackHeaderShown ? 1 : 0)
+            .opacity(model.blackHeaderShown ? 0.65 : 1)
             .frame(maxWidth: .infinity, alignment: .trailing)
             .place(CGRect(
                 x: content.maxX - side,
@@ -775,6 +820,7 @@ struct QuickOptionsView: View {
                 ForEach(model.input.quickOptions.indices, id: \.self) { i in
                     section(i)
                 }
+                headerColorSection
             }
             .navigationTitle("Quick Options")
             .navigationBarTitleDisplayMode(.inline)
@@ -794,6 +840,38 @@ struct QuickOptionsView: View {
             }
         }
         .preferredColorScheme(.dark)
+    }
+
+    private var headerColorSection: some View {
+        Section {
+            // Seven fit across the narrowest iPhones at this size.
+            HStack(spacing: 10) {
+                ForEach(HeaderColor.allCases, id: \.self) { choice in
+                    Button {
+                        model.headerColor = choice
+                    } label: {
+                        Circle()
+                            .fill(choice.color)
+                            .frame(width: 34, height: 34)
+                            .overlay(Circle().stroke(Color.white.opacity(0.3), lineWidth: 1))
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white, lineWidth: 2.5)
+                                    .padding(-4)
+                                    .opacity(model.headerColor == choice ? 1 : 0)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(choice.name)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+        } header: {
+            Text("App Picker Header Color")
+        } footer: {
+            Text(model.headerColor.name)
+        }
     }
 
     @ViewBuilder
