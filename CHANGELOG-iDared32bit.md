@@ -11,7 +11,7 @@ Usability:
 - On iPhone and iPad, the app picker's header background can be blue, black, purple, pink, green, orange or teal, and its text yellow, white, gray, black, purple, orange or teal, chosen in Theme Options.
 - The app picker's Quick Options button is now Settings: the same game options, plus a Theme Options page.
 - Theme Options can hide the logo in the app picker's header, showing the name instead with a shorter header.
-- Theme Options can also hide the names under the games' icons.
+- Theme Options can also hide the names under the games' icons, and give the footer the header's background color.
 - On iPhone and iPad, a wallpaper for the app picker can be chosen from Photos, in Theme Options.
 - On iPhone and iPad, games added or removed with File Manager now show up in the app picker as soon as you come back to it.
 

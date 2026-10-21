@@ -201,6 +201,13 @@ final class PickerModel: ObservableObject {
         }
     }
 
+    /// Whether the footer behind the bottom bar has the header's background.
+    @Published var footerBackground = UserDefaults.standard.bool(forKey: footerBackgroundKey) {
+        didSet {
+            UserDefaults.standard.set(footerBackground, forKey: footerBackgroundKey)
+        }
+    }
+
     /// The logo is dimmed and black and white on the black header.
     var blackHeaderShown: Bool {
         headerColor == .black
@@ -360,6 +367,7 @@ let logoYellow = Color(red: 253 / 255, green: 224 / 255, blue: 22 / 255)
 private let headerColorKey = "AppPickerHeaderColor"
 private let hideHeaderLogoKey = "AppPickerHideHeaderLogo"
 private let hideIconLabelsKey = "AppPickerHideIconLabels"
+private let footerBackgroundKey = "AppPickerFooterBackground"
 private let headerTextColorKey = "AppPickerHeaderTextColor"
 
 /// The header text colors to choose from, for the version, name and About.
@@ -604,6 +612,18 @@ struct PickerView: View {
                         .clipped()
                         .opacity(0.8)
                         .position(x: area.midX, y: area.midY)
+                }
+                if model.footerBackground {
+                    // From the page dots, where the grid ends, to the
+                    // bottom edge. Behind the grid, which draws the dots.
+                    let top = layout.pageControlFrame.minY
+                    model.headerColor.color
+                        .place(CGRect(
+                            x: 0,
+                            y: top,
+                            width: layout.size.width,
+                            height: layout.size.height - top
+                        ))
                 }
                 BrandingLabels(branding: model.input.branding, size: layout.size)
                 if let error = model.input.error {
@@ -1002,6 +1022,11 @@ struct SettingsView: View {
                         page("Theme Options") {
                             headerColorSection
                             headerTextColorSection
+                            Section {
+                                Toggle("Footer Background Color", isOn: $model.footerBackground)
+                            } footer: {
+                                Text("Apply the header background color to the footer too.")
+                            }
                             Section {
                                 Toggle("Hide Header Logo", isOn: $model.hideHeaderLogo)
                             } footer: {
