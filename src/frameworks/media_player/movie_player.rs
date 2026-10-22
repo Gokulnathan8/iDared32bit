@@ -78,6 +78,8 @@ struct MPMoviePlayerControllerHostObject {
     content_url: id,
     movie_source_type: MPMovieSourceType,
     should_autoplay: bool,
+    // UIView *, made when first asked for
+    background_view: id,
 }
 impl HostObject for MPMoviePlayerControllerHostObject {}
 
@@ -94,6 +96,7 @@ pub const CLASSES: ClassExports = objc_classes! {
         content_url: nil,
         movie_source_type: MPMovieSourceTypeUnknown,
         should_autoplay: true,
+        background_view: nil,
     });
     env.objc.alloc_object(this, host_object, &mut env.mem)
 }
@@ -118,8 +121,10 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (())dealloc {
-    let url = env.objc.borrow::<MPMoviePlayerControllerHostObject>(this).content_url;
+    let host_obj = env.objc.borrow::<MPMoviePlayerControllerHostObject>(this);
+    let (url, background_view) = (host_obj.content_url, host_obj.background_view);
     release(env, url);
+    release(env, background_view);
 
     env.objc.dealloc_object(this, &mut env.mem);
 }
@@ -168,6 +173,19 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (id)view {
     nil // TODO
+}
+
+// For the game's own content behind the movie. TODO: it isn't shown, as
+// there's no view to put it in yet.
+- (id)backgroundView {
+    let view = env.objc.borrow::<MPMoviePlayerControllerHostObject>(this).background_view;
+    if view != nil {
+        return view;
+    }
+    let view: id = msg_class![env; UIView alloc];
+    let view: id = msg![env; view init];
+    env.objc.borrow_mut::<MPMoviePlayerControllerHostObject>(this).background_view = view;
+    view
 }
 
 - (MPMoviePlaybackState)playbackState {
