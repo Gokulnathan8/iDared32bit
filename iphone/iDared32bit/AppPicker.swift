@@ -272,6 +272,7 @@ final class PickerModel: ObservableObject {
         }
         page = input.initialPage
         gamesFolderContents = Self.contents(of: input.appsFolder)
+        looseGames = Self.looseGames(beside: input.appsFolder)
     }
 
     /// Saves a photo as the wallpaper, in place of any other wallpaper file.
@@ -471,6 +472,14 @@ final class PickerModel: ObservableObject {
 
     /// What was in the Games folder when the picker was shown.
     private var gamesFolderContents: [String] = []
+    /// The .ipa files in the main folder then, which Rust moves into Games.
+    private var looseGames: [String] = []
+
+    private static func looseGames(beside gamesFolder: String) -> [String] {
+        let mainFolder = (gamesFolder as NSString).deletingLastPathComponent
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: mainFolder)) ?? []
+        return names.filter { ($0 as NSString).pathExtension.lowercased() == "ipa" }.sorted()
+    }
 
     /// The names and modification dates of what's in a folder.
     private static func contents(of folder: String) -> [String] {
@@ -488,6 +497,7 @@ final class PickerModel: ObservableObject {
     func reloadIfGamesChanged() {
         guard result == nil,
               Self.contents(of: input.appsFolder) != gamesFolderContents
+                  || Self.looseGames(beside: input.appsFolder) != looseGames
         else {
             return
         }

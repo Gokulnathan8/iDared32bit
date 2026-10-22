@@ -15,7 +15,7 @@ Usability:
 - On iPhone and iPad, a wallpaper for the app picker can be chosen from Photos, in Theme Options.
 - On iPhone and iPad, games added or removed with File Manager now show up in the app picker as soon as you come back to it.
 - On iPhone and iPad, games can be imported with the new Import button in the app picker, or shared to iDared 32bit from other apps. The website link is now in Settings.
-- On iPhone, iPad and Android, games (`.ipa` files) put in the main folder instead of `Games` are moved into `Games` when the app picker opens.
+- On iPhone, iPad and Android, games (`.ipa` files) put in the main folder instead of `Games` are moved into `Games` when the app picker opens, or on iPhone and iPad when you come back to it.
 
 Compatibility:
 
