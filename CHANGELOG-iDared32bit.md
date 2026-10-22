@@ -10,6 +10,7 @@ Usability:
 - Toolbars in games look as they did on iPhone OS 3, with glossy bars and buttons, instead of plain white buttons.
 - On iPhone and iPad, the app picker's header background can be blue, black, purple, pink, green, orange or teal, and its text yellow, white, gray, black, purple, orange or teal, chosen in Theme Options.
 - The app picker's Quick Options button is now Settings: the same game options, plus a Theme Options page.
+- Settings can choose whether games made for both iPhone and iPad run their iPhone or iPad version.
 - Theme Options can hide the logo in the app picker's header, showing the name instead with a shorter header.
 - Theme Options can also hide the names under the games' icons, and give the footer the header's background color.
 - On iPhone and iPad, a wallpaper for the app picker can be chosen from Photos, in Theme Options.

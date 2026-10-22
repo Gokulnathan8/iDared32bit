@@ -1744,6 +1744,16 @@ const QUICK_OPTIONS: &[QuickOption] = &[
         desktop_only: false,
     },
     QuickOption {
+        label: "Device",
+        footer: "Which version of a game made for both iPhone and iPad to run.",
+        kind: QuickOptionKind::Choice(&[
+            ("Default", None),
+            ("iPhone", Some("--device-family=iphone")),
+            ("iPad", Some("--device-family=ipad")),
+        ]),
+        desktop_only: false,
+    },
+    QuickOption {
         label: "Fullscreen (override)",
         footer: "",
         kind: QuickOptionKind::Switch {
@@ -1928,6 +1938,7 @@ mod tests {
         values[1] = 2; // Orientation: landscape right
         values[2] = 1; // Network access: on
         values[3] = 0; // Analog sticks for tilt controls: off
+        values[4] = 2; // Device: iPad
         assert_eq!(
             quick_option_args(&values).collect::<Vec<_>>(),
             [
@@ -1935,6 +1946,7 @@ mod tests {
                 "--landscape-right",
                 "--allow-network-access",
                 "--disable-analog-stick-tilt-controls",
+                "--device-family=ipad",
             ],
         );
     }
