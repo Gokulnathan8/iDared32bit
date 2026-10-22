@@ -77,6 +77,7 @@ struct MPMoviePlayerControllerHostObject {
     // NSURL *
     content_url: id,
     movie_source_type: MPMovieSourceType,
+    should_autoplay: bool,
 }
 impl HostObject for MPMoviePlayerControllerHostObject {}
 
@@ -92,6 +93,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     let host_object = Box::new(MPMoviePlayerControllerHostObject {
         content_url: nil,
         movie_source_type: MPMovieSourceTypeUnknown,
+        should_autoplay: true,
     });
     env.objc.alloc_object(this, host_object, &mut env.mem)
 }
@@ -145,6 +147,12 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (())setFullscreen:(bool)fullsreen {
     todo_objc_setter!(this, fullsreen);
 }
+- (bool)shouldAutoplay {
+    env.objc.borrow::<MPMoviePlayerControllerHostObject>(this).should_autoplay
+}
+- (())setShouldAutoplay:(bool)autoplay {
+    env.objc.borrow_mut::<MPMoviePlayerControllerHostObject>(this).should_autoplay = autoplay;
+}
 - (())setInitialPlaybackTime:(NSTimeInterval)initial_time {
     todo_objc_setter!(this, initial_time);
 }
@@ -179,6 +187,14 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // MPMediaPlayback implementation
+- (())prepareToPlay {
+    log!("TODO: [(MPMoviePlayerController*){:?} prepareToPlay]", this);
+    // Some games never call play, and wait for the movie to finish.
+    if env.objc.borrow::<MPMoviePlayerControllerHostObject>(this).should_autoplay {
+        () = msg![env; this play];
+    }
+}
+
 - (())play {
     log!("TODO: [(MPMoviePlayerController*){:?} play]", this);
     if let Some(old) = env.framework_state.media_player.movie_player.active_player {
