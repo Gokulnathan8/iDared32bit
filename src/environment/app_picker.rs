@@ -85,6 +85,8 @@ fn find_apps(options: &Options) -> Result<Vec<AppInfo>, String> {
             paths::apps_dir()
         ))
     } else {
+        #[cfg(any(target_os = "ios", target_os = "android"))]
+        move_loose_ipas(&apps_dir);
         let languages = options.preferred_languages.clone().unwrap_or_else(|| {
             sdl2::locale::get_preferred_locales()
                 .map(|loc| loc.lang)
@@ -113,6 +115,41 @@ fn find_apps(options: &Options) -> Result<Vec<AppInfo>, String> {
                     Ok(apps)
                 }
             })
+    }
+}
+
+/// Moves .ipa files left in the main folder, e.g. by the Files app, into the
+/// Games folder, where they're looked for.
+#[cfg(any(target_os = "ios", target_os = "android"))]
+fn move_loose_ipas(apps_dir: &Path) {
+    let Ok(entries) = std::fs::read_dir(paths::user_data_base_path()) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let is_ipa = path
+            .extension()
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("ipa"));
+        if !is_ipa || !path.is_file() {
+            continue;
+        }
+        let dest = apps_dir.join(entry.file_name());
+        if dest.exists() {
+            log!(
+                "Not moving {} into {}, which already has a file of that name.",
+                path.display(),
+                paths::apps_dir(),
+            );
+            continue;
+        }
+        match std::fs::rename(&path, &dest) {
+            Ok(()) => {
+                log!("Moved {} into {}.", path.display(), paths::apps_dir());
+            }
+            Err(e) => {
+                log!("Warning: Couldn't move {}: {}", path.display(), e);
+            }
+        }
     }
 }
 
