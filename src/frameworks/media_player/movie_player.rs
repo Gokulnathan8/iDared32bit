@@ -34,6 +34,8 @@ impl State {
 
 type MPMovieScalingMode = NSInteger;
 type MPMovieControlStyle = NSInteger;
+type MPMovieSourceType = NSInteger;
+const MPMovieSourceTypeUnknown: MPMovieSourceType = 0;
 
 type MPMoviePlaybackState = NSInteger;
 const MPMoviePlaybackStateStopped: MPMoviePlaybackState = 0;
@@ -74,6 +76,7 @@ pub const CONSTANTS: ConstantExports = &[
 struct MPMoviePlayerControllerHostObject {
     // NSURL *
     content_url: id,
+    movie_source_type: MPMovieSourceType,
 }
 impl HostObject for MPMoviePlayerControllerHostObject {}
 
@@ -88,6 +91,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 + (id)allocWithZone:(NSZonePtr)_zone {
     let host_object = Box::new(MPMoviePlayerControllerHostObject {
         content_url: nil,
+        movie_source_type: MPMovieSourceTypeUnknown,
     });
     env.objc.alloc_object(this, host_object, &mut env.mem)
 }
@@ -143,6 +147,15 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 - (())setInitialPlaybackTime:(NSTimeInterval)initial_time {
     todo_objc_setter!(this, initial_time);
+}
+
+// Whether the content is a file or a stream: only a hint for loading it.
+- (MPMovieSourceType)movieSourceType {
+    env.objc.borrow::<MPMoviePlayerControllerHostObject>(this).movie_source_type
+}
+- (())setMovieSourceType:(MPMovieSourceType)source_type {
+    env.objc.borrow_mut::<MPMoviePlayerControllerHostObject>(this).movie_source_type =
+        source_type;
 }
 
 - (id)view {
