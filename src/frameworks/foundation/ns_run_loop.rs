@@ -356,21 +356,23 @@ pub fn run_run_loop(
         //  committed automatically when the thread’s runloop next iterates."
         ca_transaction::ThreadLocalState::commit_implicit_transaction(env);
 
+        // Like UIKit's main run loop, drain a pool each iteration, so objects
+        // autoreleased by, for example, animation delegates, timers or movie
+        // notifications don't pile up in the app's outermost pool.
+        let pool: id = if is_main_run_loop {
+            msg_class![env; NSAutoreleasePool new]
+        } else {
+            nil
+        };
+
         // We want to process those only on the main run loop
         if is_main_run_loop {
-            // Like UIKit's main run loop, drain a pool each iteration, so
-            // objects autoreleased by, for example, animation delegates
-            // don't pile up in the app's outermost pool.
-            let pool: id = msg_class![env; NSAutoreleasePool new];
-
             let next_due = uikit::handle_events(env);
             limit_sleep_time(&mut sleep_until, next_due);
 
             uikit::ui_view::layout_if_needed(env);
             let next_due = core_animation::recomposite_if_necessary(env, false);
             limit_sleep_time(&mut sleep_until, next_due);
-
-            release(env, pool);
         }
 
         assert!(timers_tmp.is_empty());
@@ -460,6 +462,7 @@ pub fn run_run_loop(
 
         if is_main_run_loop {
             media_player::handle_players(env);
+            release(env, pool);
         }
 
         // Unfortunately, touchHLE has to poll for certain things repeatedly;
