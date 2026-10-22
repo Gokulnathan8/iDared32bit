@@ -28,6 +28,7 @@ Compatibility:
 - Games now use the fonts they come with.
 - Fixed menus and screens in some games that stopped partway through their animations, didn't show their buttons, or stayed black.
 - Animated images in games now play.
+- Fixed a black screen at start-up in some games.
 - Various small fixes.
 
 ## v1.4.3 (2026-10-18)
