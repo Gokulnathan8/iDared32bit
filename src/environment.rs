@@ -2043,6 +2043,11 @@ impl Environment {
             .mem
             .alloc_and_write_cstr(self.fs.home_directory().as_str().as_bytes());
         self.env_vars.insert(b"HOME".to_vec(), home_value_cstr);
+
+        // The app's tmp folder. As on a device, it ends with a slash.
+        let tmp_dir = format!("{}/tmp/", self.fs.home_directory().as_str());
+        let tmp_value_cstr = self.mem.alloc_and_write_cstr(tmp_dir.as_bytes());
+        self.env_vars.insert(b"TMPDIR".to_vec(), tmp_value_cstr);
     }
 
     fn get_sorted_bin_indices(&self) -> Result<Vec<usize>, String> {
