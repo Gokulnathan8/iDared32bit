@@ -131,11 +131,12 @@ fn AudioComponentFindNext(
     let component_sub_type = audio_comp_descr.component_sub_type;
     let component_manufacturer = audio_comp_descr.component_manufacturer;
     // Only output is supported. VoiceProcessingIO is RemoteIO with echo
-    // cancellation for voice chat, so it's treated as RemoteIO.
+    // cancellation for voice chat, so it's treated as RemoteIO. A field of 0
+    // matches anything.
     let is_supported = component_type == kAudioUnitType_Output
         && (component_sub_type == kAudioUnitSubType_RemoteIO
             || component_sub_type == kAudioUnitSubType_VoiceProcessingIO)
-        && component_manufacturer == kAudioUnitManufacturer_Apple;
+        && matches!(component_manufacturer, 0 | kAudioUnitManufacturer_Apple);
     if !is_supported {
         // As on a device without such a component.
         log!(
