@@ -61,6 +61,15 @@ pub const CLASSES: ClassExports = objc_classes! {
     }
 }
 
+// Saves the shared defaults and lets them go, so the next
+// standardUserDefaults reads them again.
++ (())resetStandardUserDefaults {
+    if let Some(defaults) = State::get(env).standard_defaults.take() {
+        let _: bool = msg![env; defaults synchronize];
+        autorelease(env, defaults);
+    }
+}
+
 + (id)allocWithZone:(NSZonePtr)_zone {
     let host_object = Box::new(NSUserDefaultsHostObject {
         global_domain_dict: nil,
