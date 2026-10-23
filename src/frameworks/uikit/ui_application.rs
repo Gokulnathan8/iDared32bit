@@ -414,7 +414,7 @@ pub(super) fn UIApplicationMain(
     // See https://medium.com/geekculture/uiview-lifecycle-part-5-faa2d44511c9
     let views = env.framework_state.uikit.ui_view.views.clone();
     for view in views {
-        () = msg![env; view layoutSubviews];
+        () = msg![env; view layoutIfNeeded];
     }
 
     // Send applicationDidBecomeActive now that the application is ready to
