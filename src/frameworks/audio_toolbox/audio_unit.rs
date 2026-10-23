@@ -107,7 +107,11 @@ fn AudioUnitSetProperty(
     match in_id {
         kAudioUnitProperty_SetRenderCallback => {
             assert_eq!(in_element, OUTPUT_ELEMENT);
-            assert_eq!(in_scope, kAudioUnitScope_Global);
+            // Apple's docs set it on the input scope, which is the same.
+            assert!(matches!(
+                in_scope,
+                kAudioUnitScope_Global | kAudioUnitScope_Input
+            ));
             assert_eq!(in_data_size, guest_size_of::<AURenderCallbackStruct>());
             let render_callback = env.mem.read(in_data.cast::<AURenderCallbackStruct>());
             host_object.render_callback = Some(render_callback);
