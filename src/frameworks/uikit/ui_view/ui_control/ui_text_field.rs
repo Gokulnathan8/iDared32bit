@@ -404,6 +404,7 @@ pub fn handle_backspace(env: &mut Environment, text_field: id) {
         || !responds
         || msg![env; delegate textField:text_field shouldChangeCharactersInRange:range replacementString:empty];
     if should {
+        // Autoreleased, so not released here.
         let new_text: id = msg![env; curr_text substringToIndex:(len-1)];
         log_dbg!(
             "handle_backspace, new_text: {}",
@@ -412,7 +413,6 @@ pub fn handle_backspace(env: &mut Environment, text_field: id) {
         // TODO: refactor this to proper update() method
         () = msg![env; text_label setText:new_text];
         () = msg![env; text_field setNeedsDisplay];
-        release(env, new_text);
     }
 }
 
