@@ -830,7 +830,9 @@ impl GLES for GLES1OnGL2<'_> {
 
         // Float parameters that can be queried as integers.
         let allowed_float = type_ == ParamType::Float
-            && (pname == gl21::POINT_SIZE_MAX || pname == gl21::MAX_TEXTURE_MAX_ANISOTROPY_EXT);
+            && (pname == gl21::POINT_SIZE_MAX
+                || pname == gl21::MAX_TEXTURE_MAX_ANISOTROPY_EXT
+                || pname == gl21::MAX_TEXTURE_LOD_BIAS_EXT);
 
         assert!(type_ == ParamType::Int || allowed_float);
 
