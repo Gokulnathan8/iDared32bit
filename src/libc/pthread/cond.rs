@@ -257,10 +257,7 @@ pub fn pthread_cond_destroy(env: &mut Environment, cond: MutPtr<pthread_cond_t>)
     let old_object = conds.get(&cond).unwrap();
     // As on iOS, which returns this rather than destroy it under a waiter.
     if !old_object.waiting.is_empty() || !old_object.waking.is_empty() {
-        log!(
-            "Warning: pthread_cond_destroy({:?}) with waiters, returning EBUSY",
-            cond
-        );
+        log_once!("Warning: pthread_cond_destroy() with waiters, returning EBUSY");
         return EBUSY;
     }
     conds.remove(&cond);
