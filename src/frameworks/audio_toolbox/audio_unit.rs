@@ -216,8 +216,12 @@ fn AudioUnitGetProperty(
             );
             let stream_format = match in_scope {
                 kAudioUnitScope_Global => host_object.global_stream_format,
-                kAudioUnitScope_Output => host_object.output_stream_format.unwrap(),
-                kAudioUnitScope_Input => host_object.input_stream_format.unwrap(),
+                kAudioUnitScope_Output => host_object
+                    .output_stream_format
+                    .unwrap_or(host_object.global_stream_format),
+                kAudioUnitScope_Input => host_object
+                    .input_stream_format
+                    .unwrap_or(host_object.global_stream_format),
                 _ => unimplemented!(),
             };
             env.mem.write(out_data.cast(), stream_format);
