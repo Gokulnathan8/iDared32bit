@@ -6997,6 +6997,11 @@ int test_KVO_manual_notifications() {
 }
 
 int test_NSDirectoryEnumerator() {
+#ifdef DEFINE_ME_WHEN_BUILDING_ON_MACOS
+  // This checks the app's sandbox (the bundle in the home directory) and
+  // name-ordered entries, as on iPhone OS. macOS has neither.
+  return 0;
+#endif
   NSAutoreleasePool *pool = [NSAutoreleasePool new];
   NSFileManager *fm = [NSFileManager defaultManager];
   NSString *bundle = [NSString stringWithUTF8String:path_test_app()];
