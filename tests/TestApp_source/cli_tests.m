@@ -6931,6 +6931,10 @@ int test_NSMutableArray_removeObjectsInArray_otherArray() {
 @end
 
 @implementation KVOObserved
+// Otherwise real Foundation also notifies automatically from setValue:.
++ (BOOL)automaticallyNotifiesObserversForKey:(NSString *)key {
+  return NO;
+}
 - (id)valueForKey:(NSString *)key {
   return value;
 }
