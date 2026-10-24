@@ -328,7 +328,10 @@ fn print(out: &mut String, resources_are_external_files: bool) -> Result<(), std
     )?;
     writeln!(out, "\n{}", APACHE_2_0.trim_end())?;
     divider(out)?;
-    let (encoding_rs_copyright, bsd_3_clause) = BSD_3_CLAUSE.split_once("\n\n").unwrap();
+    // Line by line, as Git may give the file Windows line endings.
+    let (encoding_rs_copyright, bsd_3_clause) = BSD_3_CLAUSE.split_once('\n').unwrap();
+    let (encoding_rs_copyright, bsd_3_clause) =
+        (encoding_rs_copyright.trim_end(), bsd_3_clause.trim_start());
     writeln!(
         out,
         "\nThe following are licensed under the BSD-3-Clause license:\n\n\
