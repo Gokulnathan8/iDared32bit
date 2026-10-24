@@ -35,6 +35,11 @@ Compatibility:
 - Fixed a black screen at start-up in some games.
 - Various small fixes.
 
+Other:
+
+- On iPhone, iPad and Android, the license information now includes the full text of the GNU GPL, which the libgcc and libstdc++ libraries are licensed under.
+- The license information now includes the license texts of the Rust libraries and other code that iDared 32bit uses.
+
 ## v1.4.3 (2026-10-18)
 
 Usability:

@@ -78,9 +78,9 @@ touchHLE © 2023–2026 touchHLE project contributors.
 
 iDared 32bit is based on touchHLE. Its source code, including touchHLE's and the modifications made to it here, is licensed under the Mozilla Public License 2.0 (MPL-2.0). The iDared 32bit name, logo and app icon are not; see below.
 
-**Distributed binaries are also licensed under the MPL-2.0. They are not licensed under the GNU General Public License (GPL).** Everything compiled into the executable is licensed under the MPL-2.0 or under more permissive terms; none of it is GPL-licensed.
+**Distributed binaries are also licensed under the MPL-2.0. iDared 32bit is not licensed under the GNU General Public License (GPL).** Its own code, and every library it is built from, is licensed under the MPL-2.0 or under more permissive terms. Separately, the app carries two GPL-licensed libraries, described below.
 
-The app carries copies of the libgcc and libstdc++ dynamic libraries from Apple's iPhone OS SDK (`dylibs/`), which apps running inside the emulated device link against. These are separate programs, licensed under the GNU GPL version 2 or later. They run only inside the emulated device, are not linked with iDared 32bit, and do not change its license. Their license notices, and a written offer for their source code, are included in the app's license information.
+The app carries copies of the libgcc and libstdc++ dynamic libraries from Apple's iPhone OS SDK (`dylibs/`), which apps running inside the emulated device link against. On iOS, these copies are embedded in the app's executable file, as data. They are separate programs, licensed under the GNU GPL version 2 or later. They run only inside the emulated device, are not linked with iDared 32bit, and do not change its license. Their license notices, the full text of the GPL, and a written offer for their source code, are included in the app's license information.
 
 Copyright, authorship, and license notices for touchHLE, mGBA, and bundled components are preserved in the source and available through the app's license information. See `LICENSE`, `src/licenses.rs`, and the applicable bundled-component directories for details.
 
