@@ -524,7 +524,7 @@ fn load_strings_as_standard_format(env: &mut Environment, dict_url: id) -> id {
 
 fn decode_strings_file(bytes: &[u8]) -> Result<String, String> {
     let utf16 = |bytes: &[u8], from: fn([u8; 2]) -> u16| {
-        let units: Vec<u16> = bytes.chunks_exact(2).map(|c| from([c[0], c[1]])).collect();
+        let units: Vec<u16> = bytes.as_chunks::<2>().0.iter().map(|&c| from(c)).collect();
         String::from_utf16(&units).map_err(|_| "invalid UTF-16".to_string())
     };
     match bytes {
