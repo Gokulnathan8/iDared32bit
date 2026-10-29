@@ -1,0 +1,72 @@
+name: Build unsigned IPA
+
+# Put this file in your fork at: .github/workflows/build-ipa.yml
+# Then: Actions tab -> "Build unsigned IPA" -> Run workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch or tag to build"
+        default: "v1.5.0"
+
+env:
+  PROJECT: iphone/iDared32bit.xcodeproj
+  SCHEME: iDared32bit
+  # Newer CMake refuses SDL's old cmake_minimum_required (see upstream issue #4)
+  CMAKE_POLICY_VERSION_MINIMUM: "3.5"
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: recursive
+
+      - name: Select newest installed Xcode
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_*.app | sort -V | tail -n 1)
+          echo "Using $XCODE"
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          xcodebuild -version
+
+      - name: Install Rust and iOS target
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustup target add aarch64-apple-ios
+          brew list cmake >/dev/null 2>&1 || brew install cmake
+          cmake --version
+
+      - name: List schemes (for debugging)
+        run: xcodebuild -list -project "$PROJECT" || true
+
+      - name: Build (unsigned)
+        run: |
+          xcodebuild \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package IPA
+        run: |
+          APP=$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" | head -n 1)
+          echo "Found app: $APP"
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -qr iDared32bit-unsigned.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iDared32bit-unsigned-ipa
+          path: iDared32bit-unsigned.ipa
