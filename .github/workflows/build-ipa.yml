@@ -46,15 +46,9 @@ jobs:
 
       - name: Build (unsigned)
         run: |
-          SCHEMES=$(xcodebuild -list -json -project "$PROJECT" | python3 -c "import sys,json; d=json.load(sys.stdin); print('\n'.join(d['project']['schemes']))")
-          echo "Schemes found:"; echo "$SCHEMES"
-          if echo "$SCHEMES" | grep -qx "iDared32bit"; then SCHEME="iDared32bit"
-          elif echo "$SCHEMES" | grep -qx "touchHLE"; then SCHEME="touchHLE"
-          else SCHEME=$(echo "$SCHEMES" | head -n 1); fi
-          echo "Using scheme: $SCHEME"
           xcodebuild \
             -project "$PROJECT" \
-            -scheme "$SCHEME" \
+            -scheme "iDared 32bit" \
             -configuration Release \
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
