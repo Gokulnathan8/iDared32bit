@@ -8,7 +8,7 @@ on:
     inputs:
       ref:
         description: "Branch or tag to build"
-        default: "v1.5.0"
+        default: "idared32bit"
 
 env:
   PROJECT: iphone/iDared32bit.xcodeproj
